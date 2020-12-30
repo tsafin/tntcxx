@@ -322,13 +322,11 @@ single_conn_select(Connector<BUFFER> &client)
 	uint32_t limit = 1;
 	uint32_t offset = 0;
 	IteratorType iter = IteratorType::EQ;
-	std::tuple key1 = std::make_tuple(666);
-	std::tuple key2 = std::make_tuple(777);
-	std::tuple key3 = std::make_tuple(-1);
 
-	rid_t f1 = conn.space[space_id].index[index_id].select(key1, limit, offset, iter);
-	rid_t f2 = conn.space[space_id].index[index_id].select(key2, limit, offset, iter);
-	rid_t f3 = conn.space[space_id].index[index_id].select(key3, limit, offset, iter);
+	auto s = conn.space[space_id];
+	rid_t f1 = s.select(std::make_tuple(666));
+	rid_t f2 = s.index[index_id].select(std::make_tuple(777));
+	rid_t f3 = s.select(std::make_tuple(-1), index_id, limit, offset, iter);
 
 	client.wait(conn, f1, WAIT_TIMEOUT);
 	fail_unless(conn.futureIsReady(f1));

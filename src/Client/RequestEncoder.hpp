@@ -68,9 +68,10 @@ public:
 	template <class T>
 	size_t encodeReplace(const T &tuple, uint32_t space_id);
 	template <class T>
-	size_t encodeSelect(const T& key, uint32_t space_id, uint32_t index_id,
-			    uint32_t limit, uint32_t offset,
-			    IteratorType iterator);
+	size_t encodeSelect(const T& key, uint32_t space_id,
+			    uint32_t index_id = 0,
+			    uint32_t limit = UINT32_MAX, uint32_t offset = 0,
+			    IteratorType iterator = EQ);
 
 	/** Sync value is used as request id. */
 	static size_t getSync() { return sync; }

@@ -94,8 +94,9 @@ public:
 			return m_Conn.replace(tuple, space_id);
 		}
 		template <class T>
-		rid_t select(const T &key, uint32_t index_id, uint32_t limit,
-			     uint32_t offset, IteratorType iterator)
+		rid_t select(const T& key, uint32_t index_id = 0,
+			     uint32_t limit = UINT32_MAX,
+			     uint32_t offset = 0, IteratorType iterator = EQ)
 		{
 			return m_Conn.select(key, space_id, index_id, limit,
 					     offset, iterator);
@@ -110,8 +111,10 @@ public:
 				return *this;
 			}
 			template <class T>
-			rid_t select(const T &key, uint32_t limit,
-				     uint32_t offset, IteratorType iterator)
+			rid_t select(const T &key,
+				     uint32_t limit = UINT32_MAX,
+				     uint32_t offset = 0,
+				     IteratorType iterator = EQ)
 			{
 				return m_Conn.select(key, m_Space.space_id,
 						     index_id, limit,
@@ -210,8 +213,9 @@ private:
 	rid_t replace(const T &tuple, uint32_t space_id);
 	template <class T>
 	rid_t select(const T &key,
-		     uint32_t space_id, uint32_t index_id, uint32_t limit,
-		     uint32_t offset, IteratorType iterator);
+		     uint32_t space_id, uint32_t index_id = 0,
+		     uint32_t limit = UINT32_MAX,
+		     uint32_t offset = 0, IteratorType iterator = EQ);
 };
 
 template<class BUFFER, class NetProvider>
