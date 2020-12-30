@@ -326,9 +326,9 @@ single_conn_select(Connector<BUFFER> &client)
 	std::tuple key2 = std::make_tuple(777);
 	std::tuple key3 = std::make_tuple(-1);
 
-	rid_t f1 = conn.space[space_id].index[index_id].select(limit, offset, iter, key1);
-	rid_t f2 = conn.space[space_id].index[index_id].select(limit, offset, iter, key2);
-	rid_t f3 = conn.space[space_id].index[index_id].select(limit, offset, iter, key3);
+	rid_t f1 = conn.space[space_id].index[index_id].select(key1, limit, offset, iter);
+	rid_t f2 = conn.space[space_id].index[index_id].select(key2, limit, offset, iter);
+	rid_t f3 = conn.space[space_id].index[index_id].select(key3, limit, offset, iter);
 
 	client.wait(conn, f1, WAIT_TIMEOUT);
 	fail_unless(conn.futureIsReady(f1));

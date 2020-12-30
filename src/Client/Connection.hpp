@@ -91,15 +91,14 @@ public:
 		template <class T>
 		rid_t replace(const T &tuple)
 		{
-			return m_Conn.replace(space_id, tuple);
+			return m_Conn.replace(tuple, space_id);
 		}
 		template <class T>
-		rid_t select(uint32_t index_id, uint32_t limit,
-			     uint32_t offset, IteratorType iterator,
-			     const T &key)
+		rid_t select(const T &key, uint32_t index_id, uint32_t limit,
+			     uint32_t offset, IteratorType iterator)
 		{
-			return m_Conn.select(space_id, index_id, limit,
-					     offset, iterator, key);
+			return m_Conn.select(key, space_id, index_id, limit,
+					     offset, iterator);
 		}
 		class Index {
 		public:
@@ -111,12 +110,12 @@ public:
 				return *this;
 			}
 			template <class T>
-			rid_t select(uint32_t limit, uint32_t offset,
-				     IteratorType iterator,
-				     const T &key)
+			rid_t select(const T &key, uint32_t limit,
+				     uint32_t offset, IteratorType iterator)
 			{
-				return m_Conn.select(m_Space.space_id, index_id,
-						     limit, offset, iterator, key);
+				return m_Conn.select(key, m_Space.space_id,
+						     index_id, limit,
+						     offset, iterator);
 			}
 		private:
 			Connection<BUFFER, NetProvider> &m_Conn;
@@ -208,11 +207,11 @@ private:
 	std::unordered_map<rid_t, Response<BUFFER>> m_Futures;
 
 	template <class T>
-	rid_t replace(uint32_t space_id, const T &tuple);
+	rid_t replace(const T &tuple, uint32_t space_id);
 	template <class T>
-	rid_t select(uint32_t space_id, uint32_t index_id, uint32_t limit,
-		     uint32_t offset, IteratorType iterator,
-		     const T &key);
+	rid_t select(const T &key,
+		     uint32_t space_id, uint32_t index_id, uint32_t limit,
+		     uint32_t offset, IteratorType iterator);
 };
 
 template<class BUFFER, class NetProvider>
@@ -274,9 +273,9 @@ Connection<BUFFER, NetProvider>::ping()
 template<class BUFFER, class NetProvider>
 template <class T>
 rid_t
-Connection<BUFFER, NetProvider>::replace(uint32_t space_id, const T &tuple)
+Connection<BUFFER, NetProvider>::replace(const T &tuple, uint32_t space_id)
 {
-	m_EndEncoded += m_Encoder.encodeReplace(space_id, tuple);
+	m_EndEncoded += m_Encoder.encodeReplace(tuple, space_id);
 	m_Connector.readyToSend(*this);
 	return RequestEncoder<BUFFER>::getSync();
 }
@@ -284,13 +283,12 @@ Connection<BUFFER, NetProvider>::replace(uint32_t space_id, const T &tuple)
 template<class BUFFER, class NetProvider>
 template <class T>
 rid_t
-Connection<BUFFER, NetProvider>::select(uint32_t space_id, uint32_t index_id,
-			   uint32_t limit, uint32_t offset,
-			   IteratorType iterator,
-			   const T &key)
+Connection<BUFFER, NetProvider>::select(const T &key, uint32_t space_id,
+					uint32_t index_id, uint32_t limit,
+					uint32_t offset, IteratorType iterator)
 {
-	m_EndEncoded += m_Encoder.encodeSelect(space_id, index_id, limit,
-					      offset, iterator, key);
+	m_EndEncoded += m_Encoder.encodeSelect(key, space_id, index_id, limit,
+					       offset, iterator);
 	m_Connector.readyToSend(*this);
 	return RequestEncoder<BUFFER>::getSync();
 }

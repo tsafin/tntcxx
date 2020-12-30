@@ -66,11 +66,11 @@ public:
 
 	size_t encodePing();
 	template <class T>
-	size_t encodeReplace(uint32_t space_id, const T &tuple);
+	size_t encodeReplace(const T &tuple, uint32_t space_id);
 	template <class T>
-	size_t encodeSelect(uint32_t space_id, uint32_t index_id,
-			  uint32_t limit, uint32_t offset,
-			  IteratorType iterator, const T &key);
+	size_t encodeSelect(const T& key, uint32_t space_id, uint32_t index_id,
+			    uint32_t limit, uint32_t offset,
+			    IteratorType iterator);
 
 	/** Sync value is used as request id. */
 	static size_t getSync() { return sync; }
@@ -112,8 +112,7 @@ RequestEncoder<BUFFER>::encodePing()
 template<class BUFFER>
 template <class T>
 size_t
-RequestEncoder<BUFFER>::encodeReplace(uint32_t space_id,
-				      const T &tuple)
+RequestEncoder<BUFFER>::encodeReplace(const T &tuple, uint32_t space_id)
 {
 	iterator_t<BUFFER> request_start = m_Buf.end();
 	m_Buf.addBack('\xce');
@@ -134,10 +133,10 @@ RequestEncoder<BUFFER>::encodeReplace(uint32_t space_id,
 template<class BUFFER>
 template <class T>
 size_t
-RequestEncoder<BUFFER>::encodeSelect(uint32_t space_id, uint32_t index_id,
+RequestEncoder<BUFFER>::encodeSelect(const T &key,
+				     uint32_t space_id, uint32_t index_id,
 				     uint32_t limit, uint32_t offset,
-				     IteratorType iterator,
-				     const T &key)
+				     IteratorType iterator)
 {
 	iterator_t<BUFFER> request_start = m_Buf.end();
 	m_Buf.addBack('\xce');
