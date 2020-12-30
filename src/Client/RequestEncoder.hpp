@@ -87,8 +87,8 @@ RequestEncoder<BUFFER>::encodeHeader(int request)
 {
 	//TODO: add schema version.
 	m_Enc.add(mpp::as_map(std::forward_as_tuple(
-		Iproto::SYNC, ++RequestEncoder::sync,
-		Iproto::REQUEST_TYPE, request)));
+		MPP_AS_CONST(Iproto::SYNC), ++RequestEncoder::sync,
+		MPP_AS_CONST(Iproto::REQUEST_TYPE), request)));
 }
 
 template<class BUFFER>
@@ -122,8 +122,8 @@ RequestEncoder<BUFFER>::encodeReplace(uint32_t space_id,
 	iterator_t<BUFFER> request_header = m_Buf.end();
 	encodeHeader(Iproto::REPLACE);
 	m_Enc.add(mpp::as_map(std::forward_as_tuple(
-		Iproto::SPACE_ID, space_id,
-		Iproto::TUPLE, tuple)));
+		MPP_AS_CONST(Iproto::SPACE_ID), space_id,
+		MPP_AS_CONST(Iproto::TUPLE), tuple)));
 	uint32_t request_size = m_Buf.end() - request_header;
 	LOG_DEBUG("request size %d", request_size);
 	m_Buf.set(request_sz_itr, __builtin_bswap32(request_size));
@@ -146,12 +146,12 @@ RequestEncoder<BUFFER>::encodeSelect(uint32_t space_id, uint32_t index_id,
 	iterator_t<BUFFER> request_header = m_Buf.end();
 	encodeHeader(Iproto::SELECT);
 	m_Enc.add(mpp::as_map(std::forward_as_tuple(
-		Iproto::SPACE_ID, space_id,
-		Iproto::INDEX_ID, index_id,
-		Iproto::LIMIT, limit,
-		Iproto::OFFSET, offset,
-		Iproto::ITERATOR, iterator,
-		Iproto::KEY, key)));
+		MPP_AS_CONST(Iproto::SPACE_ID), space_id,
+		MPP_AS_CONST(Iproto::INDEX_ID), index_id,
+		MPP_AS_CONST(Iproto::LIMIT), limit,
+		MPP_AS_CONST(Iproto::OFFSET), offset,
+		MPP_AS_CONST(Iproto::ITERATOR), iterator,
+		MPP_AS_CONST(Iproto::KEY), key)));
 	uint32_t request_size = m_Buf.end() - request_header;
 	m_Buf.set(request_sz_itr, __builtin_bswap32(request_size));
 	return m_Buf.end() - request_start;
