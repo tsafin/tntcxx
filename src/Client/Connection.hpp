@@ -88,15 +88,15 @@ public:
 			space_id = id;
 			return *this;
 		}
-		template <typename... Args>
-		rid_t replace(const std::tuple<Args...> &tuple)
+		template <class T>
+		rid_t replace(const T &tuple)
 		{
 			return m_Conn.replace(space_id, tuple);
 		}
-		template <typename... Args>
+		template <class T>
 		rid_t select(uint32_t index_id, uint32_t limit,
 			     uint32_t offset, IteratorType iterator,
-			     const std::tuple<Args...> &key)
+			     const T &key)
 		{
 			return m_Conn.select(space_id, index_id, limit,
 					     offset, iterator, key);
@@ -110,10 +110,10 @@ public:
 				index_id = id;
 				return *this;
 			}
-			template <typename... Args>
+			template <class T>
 			rid_t select(uint32_t limit, uint32_t offset,
 				     IteratorType iterator,
-				     const std::tuple<Args...> &key)
+				     const T &key)
 			{
 				return m_Conn.select(m_Space.space_id, index_id,
 						     limit, offset, iterator, key);
@@ -207,12 +207,12 @@ private:
 
 	std::unordered_map<rid_t, Response<BUFFER>> m_Futures;
 
-	template <typename... Args>
-	rid_t replace(uint32_t space_id, const std::tuple<Args...> &tuple);
-	template <typename... Args>
+	template <class T>
+	rid_t replace(uint32_t space_id, const T &tuple);
+	template <class T>
 	rid_t select(uint32_t space_id, uint32_t index_id, uint32_t limit,
 		     uint32_t offset, IteratorType iterator,
-		     const std::tuple<Args...> &key);
+		     const T &key);
 };
 
 template<class BUFFER, class NetProvider>
@@ -272,9 +272,9 @@ Connection<BUFFER, NetProvider>::ping()
 }
 
 template<class BUFFER, class NetProvider>
-template <typename... Args>
+template <class T>
 rid_t
-Connection<BUFFER, NetProvider>::replace(uint32_t space_id, const std::tuple<Args...> &tuple)
+Connection<BUFFER, NetProvider>::replace(uint32_t space_id, const T &tuple)
 {
 	m_EndEncoded += m_Encoder.encodeReplace(space_id, tuple);
 	m_Connector.readyToSend(*this);
@@ -282,12 +282,12 @@ Connection<BUFFER, NetProvider>::replace(uint32_t space_id, const std::tuple<Arg
 }
 
 template<class BUFFER, class NetProvider>
-template <typename... Args>
+template <class T>
 rid_t
 Connection<BUFFER, NetProvider>::select(uint32_t space_id, uint32_t index_id,
 			   uint32_t limit, uint32_t offset,
 			   IteratorType iterator,
-			   const std::tuple<Args...> &key)
+			   const T &key)
 {
 	m_EndEncoded += m_Encoder.encodeSelect(space_id, index_id, limit,
 					      offset, iterator, key);

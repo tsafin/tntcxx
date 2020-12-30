@@ -32,7 +32,6 @@
 #include <any>
 #include <cstdint>
 #include <map>
-#include <tuple>
 
 #include "IprotoConstants.hpp"
 #include "../mpp/mpp.hpp"
@@ -66,12 +65,12 @@ public:
 	RequestEncoder& operator = (const RequestEncoder& encoder) = delete;
 
 	size_t encodePing();
-	template <typename... Args>
-	size_t encodeReplace(uint32_t space_id, const std::tuple<Args...> &tuple);
-	template <typename... Args>
+	template <class T>
+	size_t encodeReplace(uint32_t space_id, const T &tuple);
+	template <class T>
 	size_t encodeSelect(uint32_t space_id, uint32_t index_id,
 			  uint32_t limit, uint32_t offset,
-			  IteratorType iterator, const std::tuple<Args...> &key);
+			  IteratorType iterator, const T &key);
 
 	/** Sync value is used as request id. */
 	static size_t getSync() { return sync; }
@@ -113,10 +112,10 @@ RequestEncoder<BUFFER>::encodePing()
 }
 
 template<class BUFFER>
-template <typename... Args>
+template <class T>
 size_t
 RequestEncoder<BUFFER>::encodeReplace(uint32_t space_id,
-				      const std::tuple<Args...> &tuple)
+				      const T &tuple)
 {
 	iterator_t<BUFFER> request_start = m_Buf.end();
 	m_Buf.addBack('\xce');
@@ -136,12 +135,12 @@ RequestEncoder<BUFFER>::encodeReplace(uint32_t space_id,
 }
 
 template<class BUFFER>
-template <typename... Args>
+template <class T>
 size_t
 RequestEncoder<BUFFER>::encodeSelect(uint32_t space_id, uint32_t index_id,
 				     uint32_t limit, uint32_t offset,
 				     IteratorType iterator,
-				     const std::tuple<Args...> &key)
+				     const T &key)
 {
 	iterator_t<BUFFER> request_start = m_Buf.end();
 	m_Buf.addBack('\xce');
