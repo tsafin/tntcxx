@@ -50,6 +50,7 @@ logLevelToStr(LogLevel lvl)
 		case ERROR   : return "ERROR";
 	}
 	assert(0 && "Unknown log level");
+	return "Unknown log level";
 }
 
 class Logger {

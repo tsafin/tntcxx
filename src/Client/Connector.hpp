@@ -208,7 +208,9 @@ template<class BUFFER, class NetProvider>
 void
 Connector<BUFFER, NetProvider>::readyToSend(Connection<BUFFER, NetProvider> &conn)
 {
+#ifndef NDEBUG
 	LOG_DEBUG("Connection %s is ready to send", conn.toString().c_str());
+#endif
 	m_NetProvider.readyToSend(conn);
 }
 

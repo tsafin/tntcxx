@@ -1,4 +1,4 @@
-box.cfg{listen = 3301 }
+box.cfg{listen = 3301, net_msg_max=2000 }
 box.schema.user.grant('guest', 'super')
 
 box.execute("DROP TABLE IF EXISTS t;")

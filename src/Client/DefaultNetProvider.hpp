@@ -223,8 +223,11 @@ DefaultNetProvider<BUFFER>::send(Connection<BUFFER, DefaultNetProvider> &conn)
 		size_t sent_bytes = 0;
 		size_t iov_cnt = 0;
 		struct iovec *iov = outBufferToIOV(conn, &iov_cnt);
+		if (iov_cnt == 0 || (iov_cnt == 1 && iov->iov_len == 0))
+			break;
 		int rc = m_NetworkEngine.sendall(conn.socket, iov, iov_cnt,
 						 &sent_bytes);
+
 		hasSentBytes(conn, sent_bytes);
 		LOG_DEBUG("send %d bytes to the %d socket", sent_bytes, conn.socket);
 		if (rc != 0) {
