@@ -51,19 +51,20 @@ static constexpr size_t MP_RESPONSE_SIZE = 5;
 template<class BUFFER>
 class ResponseDecoder {
 public:
-	ResponseDecoder(BUFFER &buf) : m_Dec(buf) {};
+	ResponseDecoder(BUFFER &buf) : m_Dec(buf){};
 	~ResponseDecoder() { };
 	ResponseDecoder() = delete;
 	ResponseDecoder(const ResponseDecoder& decoder) = delete;
 	ResponseDecoder& operator = (const ResponseDecoder& decoder) = delete;
 
-	int decodeResponse(Response<BUFFER> &response);
+	int decodeResponse(Response<BUFFER> &response,
+			   enum DecodeMode decodeMode);
 	int decodeResponseSize();
 	void reset(const iterator_t<BUFFER> &itr);
 
 private:
 	int decodeHeader(Header &header);
-	int decodeBody(Body<BUFFER> &body);
+	int decodeBody(Body<BUFFER> &body, enum DecodeMode decodeMode);
 	mpp::Dec<BUFFER> m_Dec;
 };
 
@@ -93,9 +94,10 @@ ResponseDecoder<BUFFER>::decodeHeader(Header &header)
 
 template<class BUFFER>
 int
-ResponseDecoder<BUFFER>::decodeBody(Body<BUFFER> &body)
+ResponseDecoder<BUFFER>::decodeBody(Body<BUFFER> &body,
+				    enum DecodeMode decodeMode)
 {
-	m_Dec.SetReader(false, BodyReader{m_Dec, body});
+	m_Dec.SetReader(false, BodyReader{m_Dec, body, decodeMode});
 	mpp::ReadResult_t res = m_Dec.Read();
 	if (res != mpp::READ_SUCCESS)
 		return -1;
@@ -104,13 +106,14 @@ ResponseDecoder<BUFFER>::decodeBody(Body<BUFFER> &body)
 
 template<class BUFFER>
 int
-ResponseDecoder<BUFFER>::decodeResponse(Response<BUFFER> &response)
+ResponseDecoder<BUFFER>::decodeResponse(Response<BUFFER> &response,
+					enum DecodeMode decodeMode)
 {
 	if (decodeHeader(response.header) != 0) {
 		LOG_ERROR("Failed to decode header");
 		return -1;
 	}
-	if (decodeBody(response.body) != 0) {
+	if (decodeBody(response.body, decodeMode) != 0) {
 		LOG_ERROR("Failed to decode body");
 		return -1;
 	}

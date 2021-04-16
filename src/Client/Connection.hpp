@@ -162,7 +162,8 @@ public:
 		uint32_t space_id;
 	} space;
 
-	Connection(Connector<BUFFER, NetProvider> &connector);
+	Connection(Connector<BUFFER, NetProvider> &connector,
+		   enum DecodeMode decodeMode = DECODE_AS_DATA);
 	~Connection();
 	Connection(const Connection& connection) = delete;
 	Connection& operator = (const Connection& connection) = delete;
@@ -243,6 +244,7 @@ private:
 	Greeting m_Greeting;
 
 	std::unordered_map<rid_t, Response<BUFFER>> m_Futures;
+	enum DecodeMode m_DecodeMode;
 
 	template <class T>
 	rid_t insert(const T &tuple, uint32_t space_id);
@@ -264,12 +266,14 @@ private:
 };
 
 template<class BUFFER, class NetProvider>
-Connection<BUFFER, NetProvider>::Connection(Connector<BUFFER, NetProvider> &connector) :
+Connection<BUFFER, NetProvider>::Connection(Connector<BUFFER, NetProvider> &connector,
+					    enum DecodeMode decodeMode) :
 				   space(*this), socket(-1),
 				   m_Connector(connector), m_InBuf(), m_OutBuf(),
 				   m_Encoder(m_OutBuf), m_Decoder(m_InBuf),
 				   m_EndDecoded(m_InBuf.begin()),
-				   m_EndEncoded(m_OutBuf.begin())
+				   m_EndEncoded(m_OutBuf.begin()),
+				   m_DecodeMode(decodeMode)
 {
 	LOG_DEBUG("Creating connection...");
 	memset(&status, 0, sizeof(status));
@@ -523,7 +527,7 @@ decodeResponse(Connection<BUFFER, NetProvider> &conn)
 		conn.m_Decoder.reset(conn.m_EndDecoded);
 		return DECODE_NEEDMORE;
 	}
-	if (conn.m_Decoder.decodeResponse(response) != 0) {
+	if (conn.m_Decoder.decodeResponse(response, conn.m_DecodeMode) != 0) {
 		conn.setError("Failed to decode response, skipping bytes..");
 		conn.m_EndDecoded += response.size;
 		return DECODE_ERR;

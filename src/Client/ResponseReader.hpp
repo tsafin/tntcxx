@@ -38,6 +38,11 @@
 #include "../mpp/mpp.hpp"
 #include "../Utils/Logger.hpp"
 
+enum DecodeMode {
+	DECODE_AS_TUPLE = 0,
+	DECODE_AS_DATA  = 1
+};
+
 struct Header {
 	int code;
 	int sync;
@@ -182,16 +187,28 @@ struct TupleReader : mpp::ReaderTemplate<BUFFER> {
 template <class BUFFER>
 struct DataReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_ARR> {
 
-	DataReader(mpp::Dec<BUFFER>& d, Data<BUFFER>& dt) : dec(d), data(dt) {}
+	DataReader(mpp::Dec<BUFFER>& d, Data<BUFFER>& dt,
+		   enum DecodeMode decodeMode) :
+		dec(d), data(dt), mode(decodeMode) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::ArrValue u)
+	void Value(const iterator_t<BUFFER>& arg, mpp::compact::Type, mpp::ArrValue u)
 	{
 		data.dimension = u.size;
+		if (mode == DECODE_AS_TUPLE) {
+			Tuple<BUFFER> t;
+			//t.field_count = 1;
+			t.begin = arg;
+			t.end = t.begin;
+			dec.Skip(&(*t.end));
+			data.tuples.push_back(t);
+			return;
+		}
 		dec.SetReader(false, TupleReader<BUFFER>{dec, data});
 	}
 
 	mpp::Dec<BUFFER>& dec;
 	Data<BUFFER>& data;
+	enum DecodeMode mode;
 };
 
 template <class BUFFER>
@@ -361,7 +378,9 @@ struct ErrorReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_MAP> {
 template <class BUFFER>
 struct BodyKeyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_UINT> {
 
-	BodyKeyReader(mpp::Dec<BUFFER>& d, Body<BUFFER>& b) : dec(d), body(b) {}
+	BodyKeyReader(mpp::Dec<BUFFER>& d, Body<BUFFER>& b,
+		      enum DecodeMode decodeMode) :
+		dec(d), body(b), mode(decodeMode) {}
 
 	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, uint64_t key)
 	{
@@ -371,7 +390,7 @@ struct BodyKeyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_UINT> {
 		switch (key) {
 			case Iproto::DATA: {
 				body.data = Data<BUFFER>();
-				dec.SetReader(true, Data_t{dec, *body.data});
+				dec.SetReader(true, Data_t{dec, *body.data, mode});
 				break;
 			}
 			case Iproto::ERROR_24: {
@@ -394,18 +413,22 @@ struct BodyKeyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_UINT> {
 	}
 	mpp::Dec<BUFFER>& dec;
 	Body<BUFFER>& body;
+	enum DecodeMode mode;
 };
 
 template <class BUFFER>
 struct BodyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_MAP> {
 
-	BodyReader(mpp::Dec<BUFFER>& d, Body<BUFFER>& b) : dec(d), body(b) {}
+	BodyReader(mpp::Dec<BUFFER>& d, Body<BUFFER>& b,
+		   enum DecodeMode decodeMode) :
+		dec(d), body(b), mode(decodeMode) {}
 
 	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::MapValue)
 	{
-		dec.SetReader(false, BodyKeyReader{dec, body});
+		dec.SetReader(false, BodyKeyReader{dec, body, mode});
 	}
 
 	mpp::Dec<BUFFER>& dec;
 	Body<BUFFER>& body;
+	enum DecodeMode mode;
 };
