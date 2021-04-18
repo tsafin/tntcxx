@@ -71,7 +71,9 @@ struct ErrorStack {
 
 template<class BUFFER>
 struct Tuple {
-	std::optional<iterator_t<BUFFER>> begin;
+	Tuple(const iterator_t<BUFFER> &itr, size_t count) :
+		begin(itr), field_count(count) {}
+	iterator_t<BUFFER> begin;
 	size_t field_count;
 };
 
@@ -154,9 +156,7 @@ struct TupleReader : mpp::ReaderTemplate<BUFFER> {
 		mpp::MP_INT | mpp::MP_BOOL | mpp::MP_DBL | mpp::MP_STR; //| mpp::MP_NIL;
 	void Value(const iterator_t<BUFFER>& arg, mpp::compact::Type, mpp::ArrValue u)
 	{
-		Tuple<BUFFER> t;
-		t.field_count = u.size;
-		t.begin = arg;
+		Tuple<BUFFER> t(arg, u.size);
 		dec.Skip();
 		data.tuples.push_back(t);
 	}
@@ -168,9 +168,7 @@ struct TupleReader : mpp::ReaderTemplate<BUFFER> {
 	void Value(const iterator_t<BUFFER>& arg, mpp::compact::Type, T v)
 	{
 		(void) v;
-		Tuple<BUFFER> t;
-		t.field_count = 1;
-		t.begin = arg;
+		Tuple<BUFFER> t(arg, t.field_count);
 		dec.Skip();
 		data.tuples.push_back(t);
 	}
@@ -194,9 +192,7 @@ struct DataReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_ARR> {
 	{
 		data.dimension = u.size;
 		if (mode == DECODE_AS_TUPLE) {
-			Tuple<BUFFER> t;
-			t.field_count = 1;
-			t.begin = arg;
+			Tuple<BUFFER> t(arg, 1);
 			dec.Skip();
 			data.tuples.push_back(t);
 			return;
