@@ -84,6 +84,8 @@ public:
 			    IteratorType iterator = EQ);
 	template <class T>
 	size_t encodeCall(const std::string &func, const T &args);
+	template <class T>
+	size_t encodeCallRaw(const std::string &func, const T &args);
 
 	/** Sync value is used as request id. */
 	static size_t getSync() { return sync; }
@@ -246,8 +248,25 @@ RequestEncoder<BUFFER>::encodeCall(const std::string &func, const T &args)
 	m_Buf.addBack(uint32_t{0});
 	encodeHeader(Iproto::CALL);
 	m_Enc.add(mpp::as_map(std::forward_as_tuple(
+		  MPP_AS_CONST(Iproto::FUNCTION_NAME), func,
+		  MPP_AS_CONST(Iproto::TUPLE), mpp::as_arr(args))));
+	uint32_t request_size = (m_Buf.end() - request_start) - PREHEADER_SIZE;
+	m_Buf.set(request_start + 1, __builtin_bswap32(request_size));
+	return request_size + PREHEADER_SIZE;
+}
+
+template<class BUFFER>
+template <class T>
+size_t
+RequestEncoder<BUFFER>::encodeCallRaw(const std::string &func, const T &args)
+{
+	iterator_t<BUFFER> request_start = m_Buf.end();
+	m_Buf.addBack('\xce');
+	m_Buf.addBack(uint32_t{0});
+	encodeHeader(Iproto::CALL);
+	m_Enc.add(mpp::as_map(std::forward_as_tuple(
 		MPP_AS_CONST(Iproto::FUNCTION_NAME), func,
-		MPP_AS_CONST(Iproto::TUPLE), mpp::as_arr(args))));
+		MPP_AS_CONST(Iproto::TUPLE), mpp::as_raw(args))));
 	uint32_t request_size = (m_Buf.end() - request_start) - PREHEADER_SIZE;
 	m_Buf.set(request_start + 1, __builtin_bswap32(request_size));
 	return request_size + PREHEADER_SIZE;

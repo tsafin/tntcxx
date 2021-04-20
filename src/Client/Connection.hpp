@@ -173,6 +173,8 @@ public:
 
 	template <class T>
 	rid_t call(const std::string &func, const T &args);
+	template <class T>
+	rid_t callRaw(const std::string &func, const T &args);
 	rid_t ping();
 
 	void setError(const std::string &msg);
@@ -330,6 +332,16 @@ rid_t
 Connection<BUFFER, NetProvider>::call(const std::string &func, const T &args)
 {
 	m_EndEncoded += m_Encoder.encodeCall(func, args);
+	m_Connector.readyToSend(*this);
+	return RequestEncoder<BUFFER>::getSync();
+}
+
+template<class BUFFER, class NetProvider>
+template <class T>
+rid_t
+Connection<BUFFER, NetProvider>::callRaw(const std::string &func, const T &args)
+{
+	m_EndEncoded += m_Encoder.encodeCallRaw(func, args);
 	m_Connector.readyToSend(*this);
 	return RequestEncoder<BUFFER>::getSync();
 }
