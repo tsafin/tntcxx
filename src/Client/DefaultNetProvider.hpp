@@ -54,7 +54,7 @@ public:
 	using NetProvider_t = DefaultNetProvider<BUFFER, NETWORK>;
 	using Conn_t = Connection<BUFFER, NetProvider_t >;
 	using Connector_t = Connector<BUFFER, NetProvider_t >;
-	DefaultNetProvider();
+	DefaultNetProvider(void *loop = nullptr);
 	~DefaultNetProvider();
 	int connect(Conn_t &conn, const std::string_view& addr, unsigned port,
 		    size_t timeout);
@@ -86,8 +86,9 @@ private:
 };
 
 template<class BUFFER, class NETWORK>
-DefaultNetProvider<BUFFER, NETWORK>::DefaultNetProvider()
+DefaultNetProvider<BUFFER, NETWORK>::DefaultNetProvider(void *loop)
 {
+	(void) loop;
 	m_EpollFd = epoll_create(EPOLL_QUEUE_LEN);
 	if (m_EpollFd == -1) {
 		LOG_ERROR("Failed to initialize epoll: %s", strerror(errno));

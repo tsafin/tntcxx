@@ -37,7 +37,7 @@ template<class BUFFER, class NetProvider = DefaultNetProvider<BUFFER, NetworkEng
 class Connector
 {
 public:
-	Connector();
+	Connector(void *loop = nullptr);
 	~Connector();
 	Connector(const Connector& connector) = delete;
 	Connector& operator = (const Connector& connector) = delete;
@@ -71,7 +71,7 @@ private:
 };
 
 template<class BUFFER, class NetProvider>
-Connector<BUFFER, NetProvider>::Connector() : m_NetProvider()
+Connector<BUFFER, NetProvider>::Connector(void *loop) : m_NetProvider(loop)
 {
 	rlist_create(&m_ready_to_read);
 }

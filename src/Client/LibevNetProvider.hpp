@@ -32,6 +32,11 @@
 #define EV_STANDALONE 1
 #include "libev/ev.c"
 
+#ifdef offsetof
+#undef offsetof
+#endif
+#define offsetof(type, member) ((size_t) &((type *)0)->member)
+
 #include <assert.h>
 #include <chrono>
 #include <errno.h>
@@ -70,7 +75,7 @@ public:
 	using NetProvider_t = LibevNetProvider<BUFFER, NETWORK>;
 	using Conn_t = Connection<BUFFER, NetProvider_t >;
 
-	LibevNetProvider(struct ev_loop *loop = nullptr);
+	LibevNetProvider(void *loop = nullptr);
 	int connect(Conn_t &conn, const std::string_view& addr, unsigned port,
 		    size_t timeout);
 	void close(Conn_t &conn);
@@ -221,10 +226,12 @@ send_cb(struct ev_loop *loop, struct ev_io *watcher, int /* revents */)
 }
 
 template<class BUFFER, class NETWORK>
-LibevNetProvider<BUFFER, NETWORK>::LibevNetProvider(struct ev_loop *loop) :
-	m_Loop(loop), m_IsOwnLoop(false)
+LibevNetProvider<BUFFER, NETWORK>::LibevNetProvider(void *loop)
 {
-	if (m_Loop == nullptr) {
+	if (loop != nullptr) {
+		m_Loop = reinterpret_cast<struct ev_loop *>(loop);
+		m_IsOwnLoop = false;
+	} else {
 		m_Loop = ev_default_loop(0);
 		m_IsOwnLoop = true;
 	}
