@@ -492,53 +492,64 @@ template <size_t N, class allocator>
 void
 Buffer<N, allocator>::addBack(wrap::Data data)
 {
-	const char *buf = data.data;
-	size_t size = data.size;
-	assert(size != 0);
+	assert(data.size != 0);
 
-	size_t left_in_block = m_blocks.last().end() - m_end;
-	if (left_in_block > size) {
-		memcpy(m_end, buf, size);
-		m_end += size;
+	char *new_end = m_end + data.size;
+	uintptr_t was_addr = (uintptr_t)m_end;
+	uintptr_t new_addr = (uintptr_t)new_end;
+	if (((was_addr ^ new_addr) / N) == 0) {
+		// new_addr is still in block. just copy and advance.
+		memcpy(m_end, data.data, data.size);
+		m_end = new_end;
 		return;
 	}
-	char *new_end = m_end;
+
+	// Flipped out-of-block bit, go to the next block.
+	size_t left_in_block = N - was_addr % N;
+	memcpy(m_end, data.data, left_in_block);
+	data.size -= left_in_block;
+	data.data += left_in_block;
+
 	Blocks new_blocks(*this);
-	do {
-		memcpy(new_end, buf, left_in_block);
-		Block *b = newBlock(new_blocks);
-		new_end = b->begin();
-		size -= left_in_block;
-		buf += left_in_block;
-		left_in_block = Block::DATA_SIZE;
-	} while (size >= left_in_block);
-	memcpy(new_end, buf, size);
+	Block *b = newBlock(new_blocks);
+	while (data.size >= Block::DATA_SIZE) {
+		memcpy(b->begin(), data.data, Block::DATA_SIZE);
+		data.size -= Block::DATA_SIZE;
+		data.data += Block::DATA_SIZE;
+		b = newBlock(new_blocks);
+	}
 	m_blocks.insert(new_blocks, true);
-	m_end = new_end + size;
+	memcpy(b->begin(), data.data, data.size);
+	m_end = b->begin() + data.size;
 }
 
 template <size_t N, class allocator>
 void
 Buffer<N, allocator>::addBack(wrap::Advance advance)
 {
-	size_t size = advance.size;
-	assert(size != 0);
+	assert(advance.size != 0);
 
-	size_t left_in_block = m_blocks.last().end() - m_end;
-	if (left_in_block > size) {
-		m_end += size;
+	char *new_end = m_end + advance.size;
+	uintptr_t was_addr = (uintptr_t)m_end;
+	uintptr_t new_addr = (uintptr_t)new_end;
+	if (((was_addr ^ new_addr) / N) == 0) {
+		// new_addr is still in block. just advance.
+		m_end = new_end;
 		return;
 	}
-	char *new_end = m_end;
+
+	// Flipped out-of-block bit, go to the next block.
+	size_t left_in_block = N - was_addr % N;
+	advance.size -= left_in_block;
+
 	Blocks new_blocks(*this);
-	do {
-		Block *b = newBlock(new_blocks);
-		new_end = b->begin();
-		size -= left_in_block;
-		left_in_block = Block::DATA_SIZE;
-	} while (size >= left_in_block);
+	Block *b = newBlock(new_blocks);
+	while (advance.size >= Block::DATA_SIZE) {
+		advance.size -= Block::DATA_SIZE;
+		b = newBlock(new_blocks);
+	}
 	m_blocks.insert(new_blocks, true);
-	m_end = new_end + size;
+	m_end = b->begin() + advance.size;
 }
 
 template <size_t N, class allocator>
@@ -546,9 +557,37 @@ template <class T>
 void
 Buffer<N, allocator>::addBack(const T& t)
 {
-	char data[sizeof(T)];
-	memcpy(data, &t, sizeof(T));
-	addBack(wrap::Data{data, sizeof(T)});
+	static_assert(sizeof(T) <= Block::DATA_SIZE,
+		"Please use wrap::Data data for big objects");
+	if constexpr (sizeof(T) == 1) {
+		memcpy(m_end, &t, sizeof(T));
+		++m_end;
+		uintptr_t addr = (uintptr_t)m_end;
+		if (addr % N == 0) {
+			// Flipped out-of-block bit, go to the next block.
+			--m_end; // Set back for the case of exception.
+			m_end = newBlock(m_blocks)->begin();
+		}
+	} else {
+		char *new_end = m_end + sizeof(T);
+		uintptr_t was_addr = (uintptr_t)m_end;
+		uintptr_t new_addr = (uintptr_t)new_end;
+		if (((was_addr ^ new_addr) & N) != 0) {
+			// Flipped out-of-block bit, go to the next block.
+			Block *b = newBlock(m_blocks);
+			size_t part1 = N - was_addr % N;
+			size_t part2 = sizeof(T) - part1;
+			char data[sizeof(T)];
+			memcpy(data, &t, sizeof(T));
+			memcpy(m_end, data, part1);
+			m_end = b->begin();
+			memcpy(m_end, data + part1, part2);
+			m_end += part2;
+		} else {
+			memcpy(m_end, &t, sizeof(T));
+			m_end = new_end;
+		}
+	}
 }
 
 template <size_t N, class allocator>
@@ -556,8 +595,18 @@ template <char... C>
 void
 Buffer<N, allocator>::addBack(CStr<C...>)
 {
-	if constexpr (CStr<C...>::size != 0) {
-		size_t left_in_block = m_blocks.last().end() - m_end;
+	if constexpr (CStr<C...>::size == 0) {
+	} else if constexpr (CStr<C...>::size == 1) {
+		*m_end = CStr<C...>::data[0];
+		++m_end;
+		uintptr_t addr = (uintptr_t)m_end;
+		if (addr % N == 0) {
+			// Flipped out-of-block bit, go to the next block.
+			--m_end; // Set back for the case of exception.
+			m_end = newBlock(m_blocks)->begin();
+		}
+	} else {
+		size_t left_in_block = N - (uintptr_t)m_end % N;
 		if (left_in_block > CStr<C...>::rnd_size) {
 			memcpy(m_end, CStr<C...>::data, CStr<C...>::rnd_size);
 			m_end += CStr<C...>::size;
