@@ -301,6 +301,9 @@ private:
 // Macro that explains to compiler that the expression os always true.
 #define TNT_INV(expr) if (!(expr)) (assert(false), __builtin_unreachable())
 
+#define TNT_LIKELY(expr) __builtin_expect(!!(expr), 1)
+#define TNT_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
+
 template <size_t N, class allocator>
 typename Buffer<N, allocator>::Block *
 Buffer<N, allocator>::newBlock(List<Block>& addToList)
@@ -392,7 +395,7 @@ template <bool LIGHT>
 typename Buffer<N, allocator>::template iterator_common<LIGHT>&
 Buffer<N, allocator>::iterator_common<LIGHT>::operator= (iterator_common& other)
 {
-	if (this == &other)
+	if (TNT_UNLIKELY(this == &other))
 		return *this;
 	m_position = other.m_position;
 	other.insert(*this);
@@ -456,7 +459,7 @@ Buffer<N, allocator>::iterator_common<LIGHT>::operator<(const iterator_common<OT
 {
 	uintptr_t this_addr = (uintptr_t)m_position;
 	uintptr_t that_addr = (uintptr_t)a.m_position;
-	if ((this_addr ^ that_addr) < N)
+	if (TNT_UNLIKELY((this_addr ^ that_addr) < N))
 		return m_position < a.m_position;
 	assert(getBlock()->id != a.getBlock()->id);
 	return getBlock()->id < a.getBlock()->id;
@@ -488,7 +491,7 @@ void
 Buffer<N, allocator>::iterator_common<LIGHT>::adjustPositionForward()
 {
 	if constexpr (!LIGHT) {
-		if (isLast() || !(next() < *this))
+		if (TNT_LIKELY(isLast() || !(next() < *this)))
 			return;
 		iterator_common *itr = &next();
 		while (!itr->isLast() && itr->next() < *this)
@@ -503,7 +506,7 @@ void
 Buffer<N, allocator>::iterator_common<LIGHT>::moveForward(size_t step)
 {
 	TNT_INV((uintptr_t) m_position % N >= Block::DATA_OFFSET);
-	while (step >= N - ((uintptr_t )m_position % N))
+	while (TNT_UNLIKELY(step >= N - ((uintptr_t )m_position % N)))
 	{
 		step -= N - ((uintptr_t )m_position % N);
 		m_position = getBlock()->next().data;
@@ -518,7 +521,7 @@ void
 Buffer<N, allocator>::iterator_common<LIGHT>::moveBackward(size_t step)
 {
 	TNT_INV((uintptr_t) m_position % N >= Block::DATA_OFFSET);
-	while (step > (uintptr_t) m_position % N - Block::DATA_OFFSET) {
+	while (TNT_UNLIKELY(step > (uintptr_t) m_position % N - Block::DATA_OFFSET)) {
 		step -= (uintptr_t) m_position % N - Block::DATA_OFFSET + 1;
 		m_position = getBlock()->prev().data + (Block::DATA_SIZE - 1);
 		TNT_INV((uintptr_t) m_position % N >= Block::DATA_OFFSET);
@@ -560,7 +563,7 @@ Buffer<N, allocator>::addBack(wrap::Data data)
 	char *new_end = m_end + data.size;
 	uintptr_t was_addr = (uintptr_t)m_end;
 	uintptr_t new_addr = (uintptr_t)new_end;
-	if (((was_addr ^ new_addr) / N) == 0) {
+	if (TNT_LIKELY(((was_addr ^ new_addr) / N) == 0)) {
 		// new_addr is still in block. just copy and advance.
 		memcpy(m_end, data.data, data.size);
 		m_end = new_end;
@@ -575,7 +578,7 @@ Buffer<N, allocator>::addBack(wrap::Data data)
 
 	Blocks new_blocks(*this);
 	Block *b = newBlock(new_blocks);
-	while (data.size >= Block::DATA_SIZE) {
+	while (TNT_UNLIKELY(data.size >= Block::DATA_SIZE)) {
 		memcpy(b->begin(), data.data, Block::DATA_SIZE);
 		data.size -= Block::DATA_SIZE;
 		data.data += Block::DATA_SIZE;
@@ -595,7 +598,7 @@ Buffer<N, allocator>::addBack(wrap::Advance advance)
 	char *new_end = m_end + advance.size;
 	uintptr_t was_addr = (uintptr_t)m_end;
 	uintptr_t new_addr = (uintptr_t)new_end;
-	if (((was_addr ^ new_addr) / N) == 0) {
+	if (TNT_LIKELY(((was_addr ^ new_addr) / N) == 0)) {
 		// new_addr is still in block. just advance.
 		m_end = new_end;
 		return;
@@ -607,7 +610,7 @@ Buffer<N, allocator>::addBack(wrap::Advance advance)
 
 	Blocks new_blocks(*this);
 	Block *b = newBlock(new_blocks);
-	while (advance.size >= Block::DATA_SIZE) {
+	while (TNT_UNLIKELY(advance.size >= Block::DATA_SIZE)) {
 		advance.size -= Block::DATA_SIZE;
 		b = newBlock(new_blocks);
 	}
@@ -626,7 +629,7 @@ Buffer<N, allocator>::addBack(const T& t)
 		memcpy(m_end, &t, sizeof(T));
 		++m_end;
 		uintptr_t addr = (uintptr_t)m_end;
-		if (addr % N == 0) {
+		if (TNT_UNLIKELY(addr % N == 0)) {
 			// Flipped out-of-block bit, go to the next block.
 			--m_end; // Set back for the case of exception.
 			m_end = newBlock(m_blocks)->begin();
@@ -635,7 +638,7 @@ Buffer<N, allocator>::addBack(const T& t)
 		char *new_end = m_end + sizeof(T);
 		uintptr_t was_addr = (uintptr_t)m_end;
 		uintptr_t new_addr = (uintptr_t)new_end;
-		if (((was_addr ^ new_addr) & N) != 0) {
+		if (TNT_UNLIKELY(((was_addr ^ new_addr) & N) != 0)) {
 			// Flipped out-of-block bit, go to the next block.
 			Block *b = newBlock(m_blocks);
 			size_t part1 = N - was_addr % N;
@@ -663,14 +666,14 @@ Buffer<N, allocator>::addBack(CStr<C...>)
 		*m_end = CStr<C...>::data[0];
 		++m_end;
 		uintptr_t addr = (uintptr_t)m_end;
-		if (addr % N == 0) {
+		if (TNT_UNLIKELY(addr % N == 0)) {
 			// Flipped out-of-block bit, go to the next block.
 			--m_end; // Set back for the case of exception.
 			m_end = newBlock(m_blocks)->begin();
 		}
 	} else {
 		size_t left_in_block = N - (uintptr_t)m_end % N;
-		if (left_in_block > CStr<C...>::rnd_size) {
+		if (TNT_LIKELY(left_in_block > CStr<C...>::rnd_size)) {
 			memcpy(m_end, CStr<C...>::data, CStr<C...>::rnd_size);
 			m_end += CStr<C...>::size;
 		} else {
@@ -690,7 +693,7 @@ Buffer<N, allocator>::dropBack(size_t size)
 	size_t left_in_block = m_end - block->begin();
 
 	/* Do not delete the block if it is empty after drop. */
-	while (size > left_in_block) {
+	while (TNT_UNLIKELY(size > left_in_block)) {
 		assert(!m_blocks.isEmpty());
 		block = delBlockAndPrev(block);
 
@@ -729,7 +732,7 @@ Buffer<N, allocator>::dropFront(size_t size)
 	Block *block = &m_blocks.first();
 	size_t left_in_block = block->end() - m_begin;
 
-	while (size > left_in_block) {
+	while (TNT_UNLIKELY(size > left_in_block)) {
 #ifndef NDEBUG
 		/*
 		 * Make sure block to be dropped does not have pointing to it
@@ -936,7 +939,7 @@ Buffer<N, allocator>::set(const iterator_common<LIGHT> &itr,
 	assert(size > 0);
 	char *pos = itr.m_position;
 	size_t left_in_block = N - (uintptr_t) pos % N;
-	while (size > left_in_block) {
+	while (TNT_UNLIKELY(size > left_in_block)) {
 		std::memcpy(pos, buf, left_in_block);
 		size -= left_in_block;
 		buf += left_in_block;
@@ -958,7 +961,7 @@ Buffer<N, allocator>::set(const iterator_common<LIGHT> &itr, T&& t)
 	static_assert(std::is_standard_layout_v<std::remove_reference_t<T>>,
 		      "T is expected to have standard layout");
 	const char *tc = &reinterpret_cast<const char &>(t);
-	if (itr.has_contiguous(sizeof(T)))
+	if (TNT_LIKELY(itr.has_contiguous(sizeof(T))))
 		memcpy(itr.m_position, tc, sizeof(T));
 	else
 		set(itr, tc, sizeof(T));
@@ -977,7 +980,7 @@ Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr,
 	 */
 	char *pos = itr.m_position;
 	size_t left_in_block = N - (uintptr_t) pos % N;
-	while (size > left_in_block) {
+	while (TNT_UNLIKELY(size > left_in_block)) {
 		memcpy(buf, pos, left_in_block);
 		size -= left_in_block;
 		buf += left_in_block;
@@ -995,7 +998,7 @@ Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr, T& t)
 	static_assert(std::is_standard_layout_v<std::remove_reference_t<T>>,
 		      "T is expected to have standard layout");
 	char *tc = &reinterpret_cast<char &>(t);
-	if (itr.has_contiguous(sizeof(T)))
+	if (TNT_LIKELY(itr.has_contiguous(sizeof(T))))
 		memcpy(tc, itr.m_position, sizeof(T));
 	else
 		get(itr, tc, sizeof(T));
