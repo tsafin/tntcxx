@@ -263,9 +263,9 @@ public:
 	template <bool LIGHT>
 	size_t getIOV(const iterator_common<LIGHT> &itr,
 	       struct iovec *vecs, size_t max_size);
-	template <bool LIGHT>
-	size_t getIOV(const iterator_common<LIGHT> &start,
-		      const iterator_common<LIGHT> &end,
+	template <bool LIGHT1, bool LIGHT2>
+	size_t getIOV(const iterator_common<LIGHT1> &start,
+		      const iterator_common<LIGHT2> &end,
 		      struct iovec *vecs, size_t max_size);
 
 	/** Return true if there's no data in the buffer. */
@@ -896,14 +896,14 @@ size_t
 Buffer<N, allocator>::getIOV(const iterator_common<LIGHT> &itr,
 			     struct iovec *vecs, size_t max_size)
 {
-	return getIOV(itr, end(), vecs, max_size);
+	return getIOV(itr, end<true>(), vecs, max_size);
 }
 
 template <size_t N, class allocator>
-template <bool LIGHT>
+template <bool LIGHT1, bool LIGHT2>
 size_t
-Buffer<N, allocator>::getIOV(const iterator_common<LIGHT> &start,
-			     const iterator_common<LIGHT> &end,
+Buffer<N, allocator>::getIOV(const iterator_common<LIGHT1> &start,
+			     const iterator_common<LIGHT2> &end,
 			     struct iovec *vecs, size_t max_size)
 {
 	assert(vecs != NULL);
@@ -1046,7 +1046,7 @@ void
 Buffer<N, allocator>::flush()
 {
 	size_t distance = m_iterators.isEmpty() ?
-		end() - begin() : m_iterators.first() - begin();
+		end<true>() - begin<true>() : m_iterators.first() - begin<true>();
 	if (distance > 0)
 		dropFront(distance);
 }
