@@ -47,17 +47,21 @@ using tnt::CStr;
  * object's lifetime. The best practice is to use temporary specificator
  * objects, liks encoder.add(mpp::as_map(<that tuple>)).
  *
- * The short list of types and specificators in this header.
- * range - a set of values by two iterators, one iterator and size etc.
+ * List of type specificators in this header (only one is allowed):
  * as_str - treat a value as string.
  * as_bin - treat a value as binary data.
  * as_arr - treat a value as msgpack array.
  * as_map - treat a value as msgpack map.
  * as_ext - treat a value as msgpack ext of given type.
  * as_raw - write already packed msgpack object as raw data.
- * reserve - skip some bytes and leave some space in the stream.
+ * reserve - write nothing of given size.
+ *
+ * List of optional specificators in this header:
  * track - additionally save beginning and end positions of the written object.
  * as_fixed - fix underlying type of msgpack object.
+ *
+ * List of terminal types:
+ * sub_array - a part of an array (limited by given size).
  * MPP_AS_CONST - compile-time constant value (except strings).
  * MPP_AS_CONSTR - compile-time constant string value.
  */
@@ -134,12 +138,14 @@ range(T* begin) { return {begin, begin + N}; }
 
 /**
  * A group of specificators - as_str(..), as_bin(..), as_arr(..), as_map(..),
- * as_raw(..).
- * They create wrappers str_holder, bin_holder etc respectively.
+ * as_raw(..), reserve(...).
+ * They create SimpleWrapper with appropriate properties.
  * A wrapper takes a container or a range and specify explicitly how it must
  * be packed/unpacked as msgpack object.
- * A bit outstanding is as_raw - it means that the data passed is expected
+ * A bit outstanding is 'as_raw' - it means that the data passed is expected
  * to be a valid msgpack object and must be just copied to the stream.
+ * Another outstanding wrapper is 'reserve' - it means some number of bytes
+ * must be skipped * (not written) in msgpack stream..
  * Specificators also accept the same arguments as range(..), in that case
  * it's a synonym of as_xxx(range(...)).
  */
