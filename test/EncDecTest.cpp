@@ -33,6 +33,34 @@
 
 #include "Utils/Helpers.hpp"
 
+/// Common tests
+void
+test_common()
+{
+	TEST_INIT(0);
+
+	static_assert(std::is_unsigned_v<mpp::under_uint_t<int8_t>>);
+	static_assert(std::is_unsigned_v<mpp::under_uint_t<int16_t>>);
+	static_assert(std::is_unsigned_v<mpp::under_uint_t<int32_t>>);
+	static_assert(std::is_unsigned_v<mpp::under_uint_t<int64_t>>);
+
+	static_assert(std::is_signed_v<mpp::under_int_t<uint8_t>>);
+	static_assert(std::is_signed_v<mpp::under_int_t<uint16_t>>);
+	static_assert(std::is_signed_v<mpp::under_int_t<uint32_t>>);
+	static_assert(std::is_signed_v<mpp::under_int_t<uint64_t>>);
+
+	static_assert(sizeof(mpp::under_uint_t<int8_t>) == 1);
+	static_assert(sizeof(mpp::under_uint_t<int16_t>) == 2);
+	static_assert(sizeof(mpp::under_uint_t<int32_t>) == 4);
+	static_assert(sizeof(mpp::under_uint_t<int64_t>) == 8);
+
+	static_assert(sizeof(mpp::under_int_t<uint8_t>) == 1);
+	static_assert(sizeof(mpp::under_int_t<uint16_t>) == 2);
+	static_assert(sizeof(mpp::under_int_t<uint32_t>) == 4);
+	static_assert(sizeof(mpp::under_int_t<uint64_t>) == 8);
+}
+
+/// Test that check string traits.
 template <bool expect_c_string, class T>
 void
 test_static_assert_strings(const T&)
@@ -42,7 +70,7 @@ test_static_assert_strings(const T&)
 }
 
 void
-test_static_assert()
+test_string_traits()
 {
 	TEST_INIT(0);
 	std::string str;
@@ -60,6 +88,7 @@ test_static_assert()
 	test_static_assert_strings<true>(mcstr);
 }
 
+/// Test that shows how enums are put to streams.
 void
 test_type_visual()
 {
@@ -332,7 +361,8 @@ test_basic()
 
 int main()
 {
-	test_static_assert();
+	test_common();
+	test_string_traits();
 	test_type_visual();
 	test_basic();
 }
