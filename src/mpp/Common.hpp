@@ -33,45 +33,116 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <tuple>
 
 namespace mpp {
+/**
+ * Delayer of static_assert evaluation.
+ */
+template <class>
+constexpr bool always_false_v = false;
 
-template <class T, class _ = void>
-struct under_uint {  };
+/**
+ * Remove the first element from tuple
+ */
+template <class T>
+struct tuple_cut { static_assert(always_false_v<T>, "Wrong usage!"); };
 
-template <class T>
-struct under_uint<T, std::enable_if_t<sizeof(T) == 1, void>> { using type = uint8_t; };
-template <class T>
-struct under_uint<T, std::enable_if_t<sizeof(T) == 2, void>> { using type = uint16_t; };
-template <class T>
-struct under_uint<T, std::enable_if_t<sizeof(T) == 4, void>> { using type = uint32_t; };
-template <class T>
-struct under_uint<T, std::enable_if_t<sizeof(T) == 8, void>> { using type = uint64_t; };
-
-template <class T>
-using under_uint_t = typename under_uint<T>::type;
-
-template <class T, class _ = void>
-struct under_int {  };
+template <class T, class... U>
+struct tuple_cut<std::tuple<T, U...>> { using type = std::tuple<U...>; };
 
 template <class T>
-struct under_int<T, std::enable_if_t<sizeof(T) == 1, void>> { using type = int8_t; };
-template <class T>
-struct under_int<T, std::enable_if_t<sizeof(T) == 2, void>> { using type = int16_t; };
-template <class T>
-struct under_int<T, std::enable_if_t<sizeof(T) == 4, void>> { using type = int32_t; };
-template <class T>
-struct under_int<T, std::enable_if_t<sizeof(T) == 8, void>> { using type = int64_t; };
+using tuple_cut_t = typename tuple_cut<T>::type;
 
-template <class T>
-using under_int_t = typename under_int<T>::type;
+/**
+ * First and last types of a tuple.
+ */
+template<class TUPLE>
+using first_t = std::tuple_element_t<0, TUPLE>;
 
+template<class TUPLE>
+using last_t = std::tuple_element_t<std::tuple_size_v<TUPLE> - 1, TUPLE>;
+
+/**
+ * Find an index in tuple of a type which has given size.
+ */
+template <size_t S, class TUPLE>
+struct tuple_find_size;
+
+template <size_t S>
+struct tuple_find_size<S, std::tuple<>> { static constexpr size_t value = 0; };
+
+template <size_t S, class TUPLE>
+struct tuple_find_size {
+	static constexpr size_t value =
+		sizeof(std::tuple_element_t<0, TUPLE>) == S ?
+		0 : 1 + tuple_find_size<S, tuple_cut_t<TUPLE>>::value;
+};
+
+template <size_t S, class TUPLE>
+constexpr size_t tuple_find_size_v = tuple_find_size<S, TUPLE>::value;
+
+/**
+ * All standard uint and in types.
+ */
+using uint_types = std::tuple<uint8_t, uint16_t, uint32_t, uint64_t>;
+using int_types = std::tuple<int8_t, int16_t, int32_t, int64_t>;
+
+/**
+ * Getter of unsigned integer type with the size as given type.
+ */
+template <class T>
+using under_uint_t = std::tuple_element_t<tuple_find_size_v<sizeof(T), uint_types>, uint_types>;
+
+/**
+ * Getter of signed integer type with the size as given type.
+ */
+template <class T>
+using under_int_t = std::tuple_element_t<tuple_find_size_v<sizeof(T), int_types>, int_types>;
+
+/**
+ * bswap overloads.
+ */
 inline uint8_t  bswap(uint8_t x)  { return x; }
 inline uint16_t bswap(uint16_t x) { return __builtin_bswap16(x); }
 inline uint32_t bswap(uint32_t x) { return __builtin_bswap32(x); }
 inline uint64_t bswap(uint64_t x) { return __builtin_bswap64(x); }
 
+/**
+ * msgpack encode bswap: convert any type to uint and bswap it.
+ */
+template <class T>
+under_uint_t<T> bswap(T t)
+{
+	static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>);
+	under_uint_t<T> tmp;
+	memcpy(&tmp, &t, sizeof(T));
+	return bswap(tmp);
+}
 
+/**
+ * msgpack decode bswap: bswap give int and convert it to any type.
+ */
+template <class T>
+T bswap(under_uint_t<T> t)
+{
+	static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>);
+	t = bswap(t);
+	T tmp;
+	memcpy(&tmp, &t, sizeof(T));
+	return tmp;
+}
+
+/**
+ * Transform rvalue reference to const value. Don't transform otherwise.
+ */
+template <class T>
+using save_or_ref = std::conditional_t<std::is_rvalue_reference_v<T&&>,
+				       const std::remove_reference_t<T>, T>;
+
+/**
+ * Standard unreachable.
+ */
 [[noreturn]] inline void unreachable() { assert(false); __builtin_unreachable(); }
 
 } // namespace mpp {

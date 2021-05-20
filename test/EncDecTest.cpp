@@ -33,6 +33,141 @@
 
 #include "Utils/Helpers.hpp"
 
+/// Common tests
+void
+test_common()
+{
+	TEST_INIT(0);
+
+	static_assert(std::is_unsigned_v<mpp::under_uint_t<int8_t>>);
+	static_assert(std::is_unsigned_v<mpp::under_uint_t<int16_t>>);
+	static_assert(std::is_unsigned_v<mpp::under_uint_t<int32_t>>);
+	static_assert(std::is_unsigned_v<mpp::under_uint_t<int64_t>>);
+
+	static_assert(std::is_signed_v<mpp::under_int_t<uint8_t>>);
+	static_assert(std::is_signed_v<mpp::under_int_t<uint16_t>>);
+	static_assert(std::is_signed_v<mpp::under_int_t<uint32_t>>);
+	static_assert(std::is_signed_v<mpp::under_int_t<uint64_t>>);
+
+	static_assert(sizeof(mpp::under_uint_t<int8_t>) == 1);
+	static_assert(sizeof(mpp::under_uint_t<int16_t>) == 2);
+	static_assert(sizeof(mpp::under_uint_t<int32_t>) == 4);
+	static_assert(sizeof(mpp::under_uint_t<int64_t>) == 8);
+
+	static_assert(sizeof(mpp::under_int_t<uint8_t>) == 1);
+	static_assert(sizeof(mpp::under_int_t<uint16_t>) == 2);
+	static_assert(sizeof(mpp::under_int_t<uint32_t>) == 4);
+	static_assert(sizeof(mpp::under_int_t<uint64_t>) == 8);
+
+	{
+		using full = std::tuple<int>;
+		using cut = mpp::tuple_cut_t<full>;
+		using expected = std::tuple<>;
+		static_assert(std::is_same_v<cut, expected>);
+		static_assert(std::is_same_v<mpp::first_t<full>, int>);
+		static_assert(std::is_same_v<mpp::last_t<full>, int>);
+	}
+	{
+		using full = std::tuple<int, float>;
+		using cut = mpp::tuple_cut_t<full>;
+		using expected = std::tuple<float>;
+		static_assert(std::is_same_v<cut, expected>);
+		static_assert(std::is_same_v<mpp::first_t<full>, int>);
+		static_assert(std::is_same_v<mpp::last_t<full>, float>);
+	}
+	{
+		using full = std::tuple<int, float, double>;
+		using cut = mpp::tuple_cut_t<full>;
+		using expected = std::tuple<float, double>;
+		static_assert(std::is_same_v<cut, expected>);
+		static_assert(std::is_same_v<mpp::first_t<full>, int>);
+		static_assert(std::is_same_v<mpp::last_t<full>, double>);
+	}
+}
+
+// Test bswap
+void
+test_bswap()
+{
+	auto bswap_naive = [](auto x) -> decltype(x)
+	{
+		static_assert(std::is_integral_v<decltype(x)>);
+		static_assert(std::is_unsigned_v<decltype(x)>);
+		auto res = x;
+		if constexpr (sizeof(x) == 1) {
+			return res;
+		} else {
+			for (size_t i = 0; i < sizeof(x); i++) {
+				res <<= 8;
+				res |= x & 0xFF;
+				x >>= 8;
+			}
+		}
+		return res;
+	};
+
+	uint64_t full = 0x1234567890123456ull;
+	{
+		auto x = (uint8_t) full;
+		fail_unless(bswap_naive(x) == mpp::bswap(x));
+	}
+	{
+		auto x = (uint16_t) full;
+		fail_unless(bswap_naive(x) == mpp::bswap(x));
+	}
+	{
+		auto x = (uint32_t) full;
+		fail_unless(bswap_naive(x) == mpp::bswap(x));
+	}
+	{
+		auto x = (uint64_t) full;
+		fail_unless(bswap_naive(x) == mpp::bswap(x));
+	}
+	{
+		auto x = (int8_t) full;
+		using under_t = uint8_t;
+		static_assert(std::is_same_v<under_t, decltype(mpp::bswap(x))>);
+		fail_unless(bswap_naive((under_t) x) == mpp::bswap(x));
+	}
+	{
+		auto x = (int16_t) full;
+		using under_t = uint16_t;
+		static_assert(std::is_same_v<under_t, decltype(mpp::bswap(x))>);
+		fail_unless(bswap_naive((under_t) x) == mpp::bswap(x));
+	}
+	{
+		auto x = (int32_t) full;
+		using under_t = uint32_t;
+		static_assert(std::is_same_v<under_t, decltype(mpp::bswap(x))>);
+		fail_unless(bswap_naive((under_t) x) == mpp::bswap(x));
+	}
+	{
+		auto x = (int64_t) full;
+		using under_t = uint64_t;
+		static_assert(std::is_same_v<under_t, decltype(mpp::bswap(x))>);
+		fail_unless(bswap_naive((under_t) x) == mpp::bswap(x));
+	}
+	{
+		float x = 3.1415927;
+		using under_t = uint32_t;
+		static_assert(std::is_same_v<under_t, decltype(mpp::bswap(x))>);
+		under_t y;
+		memcpy(&y, &x, sizeof(x));
+		fail_unless(bswap_naive(y) == mpp::bswap(x));
+		fail_unless(x == mpp::bswap<float>(mpp::bswap(x)));
+	}
+	{
+		double x = 3.1415927;
+		using under_t = uint64_t;
+		static_assert(std::is_same_v<under_t, decltype(mpp::bswap(x))>);
+		under_t y;
+		memcpy(&y, &x, sizeof(x));
+		fail_unless(bswap_naive(y) == mpp::bswap(x));
+		fail_unless(x == mpp::bswap<double>(mpp::bswap(x)));
+	}
+}
+
+/// Test that check string traits.
 template <bool expect_c_string, class T>
 void
 test_static_assert_strings(const T&)
@@ -42,7 +177,7 @@ test_static_assert_strings(const T&)
 }
 
 void
-test_static_assert()
+test_string_traits()
 {
 	TEST_INIT(0);
 	std::string str;
@@ -60,6 +195,7 @@ test_static_assert()
 	test_static_assert_strings<true>(mcstr);
 }
 
+/// Test that shows how enums are put to streams.
 void
 test_type_visual()
 {
@@ -332,7 +468,9 @@ test_basic()
 
 int main()
 {
-	test_static_assert();
+	test_common();
+	test_bswap();
+	test_string_traits();
 	test_type_visual();
 	test_basic();
 }

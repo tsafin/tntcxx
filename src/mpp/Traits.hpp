@@ -41,12 +41,6 @@
 
 namespace mpp {
 /**
- * Delayer of static_assert evaluation.
- */
-template <class>
-constexpr bool always_false_v = false;
-
-/**
  * Define a type checker @a id_name of a template class @a class_name.
  * MPP_DEFINE_TYPE_CHECKER works only if:
  *  class_name template arguments are types, like std::vector, std::tuple etc.
