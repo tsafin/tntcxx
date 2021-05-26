@@ -43,11 +43,159 @@
 #include "../Utils/Common.hpp"
 #include "../Utils/Wrappers.hpp"
 
+#include "EncRules.hpp"
+
 //TODO : add std::variant
 //TODO : add time_t?
 //TODO : rollback in case of fail
 
 namespace mpp {
+
+namespace encode_details {
+
+template <bool IS_ACTIVE, class TYPE = std::nullptr_t, TYPE VALUE = nullptr>
+struct limit_info {
+	static constexpr bool is_active = IS_ACTIVE;
+	using type = TYPE;
+	static constexpr TYPE value = VALUE;
+};
+
+template <bool IS_ACTIVE, class TYPE = void>
+struct fixed_info {
+	static constexpr bool is_active = IS_ACTIVE;
+	using type = TYPE;
+};
+
+
+template <class CONT, char... C>
+bool
+encode(CONT &cont, CStr<C...> prefix)
+{
+	cont.addBack(prefix);
+	return true;
+}
+
+template <class CONT, char... C, class T, class... MORE>
+bool
+encode(CONT &cont, CStr<C...> prefix, const T& t, const MORE&... more)
+{
+	using namespace encode_details;
+
+	constexpr compact::Type type = detectType(t);
+	constexpr auto min_limit = findMin(t);
+	constexpr auto max_limit = findMax(t);
+	constexpr auto fixed = findFixed(t);
+	const auto& names = collectNames(t);
+	auto &err_handlers = collectErrHandlers(t);
+
+	const auto& s = strip(t);
+	const auto value = getValue(s);
+
+	// Unwrap integral constant
+	using nonconst_type = nonconst_t<decltype(value)>;
+	const auto ext_type = getExtType(s); // std::ignore for non-ext
+
+	using CurRule_t = Rule_t<type>;
+
+	// TODO: Check min.
+	// TODO: Check max (don't check map dropout).
+	// TODO: Check fixed overflow.
+	// TODO: Check fixed compatible with rule.
+	// TODO: Check that fixed type is compatible with min/max.
+	// Check that fixed is compatible with rule.
+	if constexpr (fixed::is_active && std::is_same_v<fixed::type, void>) {
+		static_assert(CurRule_t::can_do_short,
+			      "Wrong fixed specialization!");
+	} else if constexpr (fixed::is_active) {
+		static_assert(CurRule_t::can_do_long,
+			      "Wrong fixed specialization!");
+		using types = typename CurRule_t::types;
+		constexpr size_t I = tuple_find_size_v<sizeof(fixed::type), types>;
+		static_assert(I < std::tuple_size_v<types>,
+			      "Wrong fixed specialization: no type of such size");
+	}
+	// Check must_be_positive
+	if constexpr (CurRule_t::must_be_positive &&
+		      std::is_signed_v<nonconst_type>) {
+		if constexpr (is_integral_constant(value)) {
+			static_assert(value::value >= 0);
+		} else {
+			if (TNT_UNLIKELY(value < 0))
+				if (UnderMin(value, 0, names))
+					return false;
+		}
+	}
+	// Check SizeOverflow
+	if constexpr (CurRule_t::can_do_long && std::is_integral_v<nonconst_type>) {
+		using last_type = last_t<typename CurRule_t::types>;
+		using last_limtis = std::numeric_limits<last_type>;
+		if constexpr (sizeof(nonconst_type) > sizeof(last_type)) {
+			static_assert(!CurRule_t::has_positive_rule,
+				      "INT could have a different check, but "
+					      "it cannot pass the condition above");
+
+			if constexpr (is_integral_constant(value)) {
+				static_assert(value::value <= last_limtis::max,
+					      "Value is too large to pack");
+			} else if (value > last_limtis::max) {
+				if (SizeOverflow(value, last_limtis::max, names))
+					return false;
+			}
+		}
+	}
+
+	if constexpr (fixed::is_active && is_integral_constant(value)) {
+		if constexpr (std::is_same_v<fixed::type, void>) {
+			std::integral_constant<uint8_t, CurRule_t::do_short(value::value)> tag{};
+			CStr<> rv{};
+		} else {
+			using types = typename CurRule_t::types;
+			constexpr size_t I = tuple_find_size_v<sizeof(fixed::type), types>;
+			using type = std::tuple_element<I, types>;
+			std::integral_constant<type, value::valur> rv{};
+		}
+	} else if constexpr (fixed::is_active) {
+	} else if constexpr (is_integral_constant(value)) {
+	} else {
+	}
+
+	if constexpr (CurRule_t::can_do_short) {
+		if constexpr (is_integral_constant(value)) {
+			if constexpr (CurRule_t::check_short(value::value)) {
+				std::integral_constant<uint8_t, CurRule_t::do_short(value::value)> tag{};
+				CStr<> val{};
+			} else {
+				static_assert(CurRule_t::can_do_long);
+			}
+		} else {
+		}
+	} else {
+	}
+
+	constexpr bool is_const_tag;
+	constexpr bool is_const_value;
+	constexpr bool is_const_data;
+
+
+
+}
+
+
+
+} // namespace encode_details {
+
+
+
+
+template <class CONT, class... T>
+bool
+encode(CONT &cont, const T&... t)
+{
+	// TODO: Guard
+	bool res = encode_details::encode(cont, CStr<>{}, t...);
+	return res;
+}
+
 
 template <class BUFFER>
 class Enc
