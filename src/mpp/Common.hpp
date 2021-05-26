@@ -133,6 +133,19 @@ T bswap(under_uint_t<T> t)
 	return tmp;
 }
 
+#define MAKE_CALLABLE_CHECKER(method)						\
+template <class CLASS, class TUPLE, class _ = void>				\
+struct is_##method##_callable_helper : std::false_type {};			\
+										\
+template <class CLASS, class... ARGS>						\
+struct is_##method##_callable_helper<CLASS, std::tuple<ARGS...>,		\
+	std::void_t<decltype(std::declval<CLASS>().method(std::declval<ARGS>()...))>>\
+	: std::true_type {};							\
+										\
+template <class CLASS, class... ARGS>						\
+constexpr bool is_##method##_callable_v =					\
+	is_##method##_callable_helper<CLASS, std::tuple<ARGS...>>::value
+
 /**
  * Transform rvalue reference to const value. Don't transform otherwise.
  */
