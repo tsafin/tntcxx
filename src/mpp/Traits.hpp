@@ -37,9 +37,62 @@
 #include <variant>
 
 #include "Types.hpp"
+#include "Common.hpp"
 #include "Constants.hpp"
 
 namespace mpp {
+
+template <class T> struct mpp_rule;
+template <class T> struct mpp_enc_rule;
+template <class T> struct mpp_dec_rule;
+
+template <class T> constexpr auto get_member_rule    (const T&) -> decltype(T::mpp_rule    )& { return T::mpp_rule    ; }
+template <class T> constexpr auto get_member_enc_rule(const T&) -> decltype(T::mpp_enc_rule)& { return T::mpp_enc_rule; }
+template <class T> constexpr auto get_member_dec_rule(const T&) -> decltype(T::mpp_dec_rule)& { return T::mpp_dec_rule; }
+
+template <class T> constexpr auto get_specialization_rule    (const T&) -> decltype(mpp_rule<T>    ::value)& { return mpp_rule<T>    ::value; }
+template <class T> constexpr auto get_specialization_enc_rule(const T&) -> decltype(mpp_enc_rule<T>::value)& { return mpp_enc_rule<T>::value; }
+template <class T> constexpr auto get_specialization_dec_rule(const T&) -> decltype(mpp_dec_rule<T>::value)& { return mpp_dec_rule<T>::value; }
+
+#define MAKE_RULE_CHECKER(name)							\
+template <class T, typename _ = void>						\
+struct has_##name : std::false_type {};						\
+template <class T>								\
+struct has_##name<T,								\
+	std::void_t<decltype(get_##name(std::declval<T>()))>>			\
+	: std::true_type {};							\
+template <class T>								\
+constexpr bool has_##name##_v = has_##name<T>::value
+
+MAKE_RULE_CHECKER(member_rule);
+MAKE_RULE_CHECKER(member_enc_rule);
+MAKE_RULE_CHECKER(member_dec_rule);
+
+MAKE_RULE_CHECKER(specialization_rule);
+MAKE_RULE_CHECKER(specialization_enc_rule);
+MAKE_RULE_CHECKER(specialization_dec_rule);
+
+#undef MAKE_RULE_CHECKER
+
+template <class T>
+constexpr auto& get_enc_rule(const T& t)
+{
+	if constexpr (has_member_enc_rule_v<T>)
+		return get_member_enc_rule<T>(t);
+	else if constexpr (has_member_rule_v<T>)
+		return get_member_rule<T>(t);
+	else if constexpr (has_specialization_enc_rule_v<T>)
+		return get_specialization_enc_rule<T>(t);
+	else if constexpr (has_specialization_rule_v<T>)
+		return get_specialization_rule<T>(t);
+	else {
+		static_assert(always_false_v<T>,
+			      "Failed to find a rule for given type! "
+			      "Check the type passed to encoder, "
+			      "for general objects provide a rule");
+	}
+}
+
 /**
  * Define a type checker @a id_name of a template class @a class_name.
  * MPP_DEFINE_TYPE_CHECKER works only if:

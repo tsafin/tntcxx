@@ -55,6 +55,15 @@ template <class T>
 using tuple_cut_t = typename tuple_cut<T>::type;
 
 /**
+ * First and last types of a tuple.
+ */
+template<class TUPLE>
+using first_t = std::tuple_element_t<0, TUPLE>;
+
+template<class TUPLE>
+using last_t = std::tuple_element_t<std::tuple_size_v<TUPLE> - 1, TUPLE>;
+
+/**
  * Find an index in tuple of a type which has given size.
  */
 template <size_t S, class TUPLE>
@@ -105,6 +114,7 @@ inline uint64_t bswap(uint64_t x) { return __builtin_bswap64(x); }
 template <class T>
 under_uint_t<T> bswap(T t)
 {
+	static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>);
 	under_uint_t<T> tmp;
 	memcpy(&tmp, &t, sizeof(T));
 	return bswap(tmp);
@@ -116,11 +126,25 @@ under_uint_t<T> bswap(T t)
 template <class T>
 T bswap(under_uint_t<T> t)
 {
+	static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>);
 	t = bswap(t);
 	T tmp;
 	memcpy(&tmp, &t, sizeof(T));
 	return tmp;
 }
+
+#define MAKE_CALLABLE_CHECKER(method)						\
+template <class CLASS, class TUPLE, class _ = void>				\
+struct is_##method##_callable_helper : std::false_type {};			\
+										\
+template <class CLASS, class... ARGS>						\
+struct is_##method##_callable_helper<CLASS, std::tuple<ARGS...>,		\
+	std::void_t<decltype(std::declval<CLASS>().method(std::declval<ARGS>()...))>>\
+	: std::true_type {};							\
+										\
+template <class CLASS, class... ARGS>						\
+constexpr bool is_##method##_callable_v =					\
+	is_##method##_callable_helper<CLASS, std::tuple<ARGS...>>::value
 
 /**
  * Transform rvalue reference to const value. Don't transform otherwise.
