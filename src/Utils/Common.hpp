@@ -36,6 +36,12 @@
 
 namespace tnt {
 /**
+ * For unification borrow std::integral constant.
+ */
+template <class T, T V>
+using integral_constant = std::integral_constant<T, V>;
+
+/**
  * Delayer of static_assert evaluation.
  */
 template <class>

@@ -293,6 +293,10 @@ test_integral_constant_traits()
 	static_assert(!tnt::is_uni_bool_v<const_bool&>);
 	static_assert(!tnt::is_uni_bool_v<Test>);
 	static_assert(!tnt::is_uni_bool_v<float>);
+
+	using int1 = std::integral_constant<int, 3>;
+	using int2 = tnt::integral_constant<int, 3>;
+	static_assert(std::is_same_v<int1, int2>);
 }
 
 int main()
