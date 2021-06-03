@@ -32,6 +32,7 @@
 
 #include <cassert>
 #include <tuple>
+#include <type_traits>
 
 namespace tnt {
 /**
@@ -131,5 +132,72 @@ constexpr bool is_signed_integer_v =
 template <class T>
 constexpr bool is_unsigned_integer_v =
 	is_integer_v<T> && std::is_unsigned_v<base_enum_t<T>>;
+
+/**
+ * Traits to detect and unwrap std::integral constant. See below.
+ */
+namespace details {
+template <class T>
+struct uni_integral_traits {
+	static constexpr bool is_const = false;
+	using base_type = T;
+};
+template <class T, class U, U V>
+struct uni_integral_traits<std::integral_constant<T, V>> {
+	static constexpr bool is_const = true;
+	using base_type = T;
+};
+} // namespace details {
+
+/**
+ * Check whether the type is std::integral_constant.
+ */
+template <class T>
+constexpr bool is_integral_constant_v =
+	details::uni_integral_traits<std::remove_cv_t<T>>::is_const;
+
+/**
+ * Safe value_type extractor by std::integral_constant type.
+ * It is std::integral_constant::value_type if it as integral_constant,
+ * or given type without (!) cv qualifiers otherwise.
+ */
+template <class T>
+using uni_integral_base_t =
+	typename details::uni_integral_traits<std::remove_cv_t<T>>::base_type;
+
+/**
+ * Universal value extractor. Returns static value member for
+ * std::integral_constant, or the value itself otherwise.
+ */
+template <class T>
+constexpr uni_integral_base_t<T> uni_value([[maybe_unused]] T value)
+{
+	if constexpr (is_integral_constant_v<T>)
+		return T::value;
+	else
+		return value;
+}
+
+/**
+ * Check whether the type is universal integral, that is either integral
+ * or integral_constant with integral base.
+ */
+template <class T>
+constexpr bool is_uni_integral_v = std::is_integral_v<uni_integral_base_t<T>>;
+
+/**
+ * Check whether the type is universal bool, that is either bool
+ * or integral_constant with bool base.
+ */
+template <class T>
+constexpr bool is_uni_bool_v = std::is_same_v<bool, uni_integral_base_t<T>>;
+
+/**
+ * Check whether the type is universal integer, that is either integer
+ * or integral_constant with integer base. See is_integer_v for
+ * integer definition.
+ */
+template <class T>
+constexpr bool is_uni_integer_v = is_integer_v<uni_integral_base_t<T>>;
 
 } // namespace mpp {
