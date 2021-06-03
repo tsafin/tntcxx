@@ -91,4 +91,45 @@ constexpr size_t tuple_find_size_v = tuple_find_size<S, TUPLE>::value;
 using uint_types = std::tuple<uint8_t, uint16_t, uint32_t, uint64_t>;
 using int_types = std::tuple<int8_t, int16_t, int32_t, int64_t>;
 
+/* Traits */
+
+/**
+ * Safe underlying_type extractor by enum type.
+ * Unlike std::underlying_type_t which is (can be) undefined for non-enum
+ * type, the checker below reveals underlying type for enums and leaves the
+ * type for the rest types.
+ */
+namespace details {
+template <class T, bool IS_ENUM> struct base_enum_h;
+template <class T> struct base_enum_h<T, false> { using type = T; };
+template <class T> struct base_enum_h<T, true> {
+	using type = std::underlying_type_t<T>;
+};
+} // namespace details {
+
+template <class T> using base_enum_t =
+	typename details::base_enum_h<T, std::is_enum_v<T>>::type;
+
+/**
+ * is_integer_v is true for integral types (see std::is_integral) except bool
+ * and for enum types.
+ */
+template <class T>
+constexpr bool is_integer_v = std::is_enum_v<T> ||
+	(std::is_integral_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>);
+
+/**
+ * Trait whether is_integer_v (see above) which is signed.
+ */
+template <class T>
+constexpr bool is_signed_integer_v =
+	is_integer_v<T> && std::is_signed_v<base_enum_t<T>>;
+
+/**
+ * Trait whether is_integer_v (see above) which is unsigned.
+ */
+template <class T>
+constexpr bool is_unsigned_integer_v =
+	is_integer_v<T> && std::is_unsigned_v<base_enum_t<T>>;
+
 } // namespace mpp {

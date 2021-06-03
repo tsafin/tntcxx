@@ -83,8 +83,108 @@ test_tuple_utils()
 	}
 }
 
+void
+test_integer_traits()
+{
+	TEST_INIT(0);
+
+	enum E1 { V1 = 0, V_BIG = UINT64_MAX };
+	enum E2 { V2 = -1 };
+	enum E3 : int { V3 = 0 };
+	enum class E4 : uint8_t { V4 = 0 };
+	struct Test { };
+
+	// base_enum_t
+	static_assert(std::is_unsigned_v<tnt::base_enum_t<E1>>);
+	static_assert(std::is_signed_v<tnt::base_enum_t<E2>>);
+	static_assert(std::is_same_v<int, tnt::base_enum_t<E3>>);
+	static_assert(std::is_same_v<uint8_t, tnt::base_enum_t<E4>>);
+	static_assert(std::is_unsigned_v<tnt::base_enum_t<const E1>>);
+	static_assert(std::is_signed_v<tnt::base_enum_t<const E2>>);
+	static_assert(std::is_same_v<int, tnt::base_enum_t<const E3>>);
+	static_assert(std::is_same_v<uint8_t, tnt::base_enum_t<const E4>>);
+	static_assert(std::is_same_v<int, tnt::base_enum_t<int>>);
+	static_assert(std::is_same_v<char, tnt::base_enum_t<char>>);
+	static_assert(std::is_same_v<Test, tnt::base_enum_t<Test>>);
+	static_assert(std::is_same_v<E1&, tnt::base_enum_t<E1&>>);
+	static_assert(std::is_same_v<E2&, tnt::base_enum_t<E2&>>);
+	static_assert(std::is_same_v<E3&, tnt::base_enum_t<E3&>>);
+	static_assert(std::is_same_v<E4&, tnt::base_enum_t<E4&>>);
+
+	// are integers
+	static_assert(tnt::is_integer_v<int>);
+	static_assert(tnt::is_integer_v<const int>);
+	static_assert(tnt::is_integer_v<char>);
+	static_assert(tnt::is_integer_v<signed char>);
+	static_assert(tnt::is_integer_v<unsigned char>);
+	static_assert(tnt::is_integer_v<E1>);
+	static_assert(tnt::is_integer_v<E2>);
+	static_assert(tnt::is_integer_v<E3>);
+	static_assert(tnt::is_integer_v<E4>);
+	static_assert(tnt::is_integer_v<const E1>);
+	static_assert(tnt::is_integer_v<const E2>);
+	static_assert(tnt::is_integer_v<const E3>);
+	static_assert(tnt::is_integer_v<const E4>);
+
+	// are not integers
+	static_assert(!tnt::is_integer_v<bool>);
+	static_assert(!tnt::is_integer_v<const bool>);
+	static_assert(!tnt::is_integer_v<float>);
+	static_assert(!tnt::is_integer_v<double>);
+	static_assert(!tnt::is_integer_v<int&>);
+	static_assert(!tnt::is_integer_v<E1&>);
+	static_assert(!tnt::is_integer_v<E2&>);
+	static_assert(!tnt::is_integer_v<E3&>);
+	static_assert(!tnt::is_integer_v<E4&>);
+	static_assert(!tnt::is_integer_v<bool&>);
+	static_assert(!tnt::is_integer_v<Test>);
+	static_assert(!tnt::is_integer_v<const Test>);
+	static_assert(!tnt::is_integer_v<Test&>);
+
+	// is_signed_integer_v..
+	static_assert(tnt::is_signed_integer_v<int>);
+	static_assert(!tnt::is_signed_integer_v<uint64_t>);
+	static_assert(!tnt::is_signed_integer_v<E1>);
+	static_assert(tnt::is_signed_integer_v<E2>);
+	static_assert(tnt::is_signed_integer_v<E3>);
+	static_assert(!tnt::is_signed_integer_v<E4>);
+
+	static_assert(tnt::is_signed_integer_v<const int>);
+	static_assert(!tnt::is_signed_integer_v<const uint64_t>);
+	static_assert(!tnt::is_signed_integer_v<const E1>);
+	static_assert(tnt::is_signed_integer_v<const E2>);
+	static_assert(tnt::is_signed_integer_v<const E3>);
+	static_assert(!tnt::is_signed_integer_v<const E4>);
+
+	static_assert(!tnt::is_signed_integer_v<Test>);
+	static_assert(!tnt::is_signed_integer_v<float>);
+	static_assert(!tnt::is_signed_integer_v<const Test>);
+	static_assert(!tnt::is_signed_integer_v<const float>);
+
+	// is_unsigned_integer_v..
+	static_assert(!tnt::is_unsigned_integer_v<int>);
+	static_assert(tnt::is_unsigned_integer_v<uint64_t>);
+	static_assert(tnt::is_unsigned_integer_v<E1>);
+	static_assert(!tnt::is_unsigned_integer_v<E2>);
+	static_assert(!tnt::is_unsigned_integer_v<E3>);
+	static_assert(tnt::is_unsigned_integer_v<E4>);
+
+	static_assert(!tnt::is_unsigned_integer_v<const int>);
+	static_assert(tnt::is_unsigned_integer_v<const uint64_t>);
+	static_assert(tnt::is_unsigned_integer_v<const E1>);
+	static_assert(!tnt::is_unsigned_integer_v<const E2>);
+	static_assert(!tnt::is_unsigned_integer_v<const E3>);
+	static_assert(tnt::is_unsigned_integer_v<const E4>);
+
+	static_assert(!tnt::is_unsigned_integer_v<Test>);
+	static_assert(!tnt::is_unsigned_integer_v<float>);
+	static_assert(!tnt::is_unsigned_integer_v<const Test>);
+	static_assert(!tnt::is_unsigned_integer_v<const float>);
+}
+
 int main()
 {
 	static_assert(tnt::always_false_v<double> == false);
 	test_tuple_utils();
+	test_integer_traits();
 }
