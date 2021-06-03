@@ -60,4 +60,29 @@ inline uint16_t bswap(uint16_t x) { return __builtin_bswap16(x); }
 inline uint32_t bswap(uint32_t x) { return __builtin_bswap32(x); }
 inline uint64_t bswap(uint64_t x) { return __builtin_bswap64(x); }
 
+/**
+ * msgpack encode bswap: convert any type to uint and bswap it.
+ */
+template <class T>
+under_uint_t<T> bswap(T t)
+{
+	static_assert(tnt::is_integer_v<T> || std::is_floating_point_v<T>);
+	under_uint_t<T> tmp;
+	memcpy(&tmp, &t, sizeof(T));
+	return bswap(tmp);
+}
+
+/**
+ * msgpack decode bswap: bswap give int and convert it to any type.
+ */
+template <class T>
+T bswap(under_uint_t<T> t)
+{
+	static_assert(tnt::is_integer_v<T> || std::is_floating_point_v<T>);
+	t = bswap(t);
+	T tmp;
+	memcpy(&tmp, &t, sizeof(T));
+	return tmp;
+}
+
 } // namespace mpp {
