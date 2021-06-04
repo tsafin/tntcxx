@@ -299,10 +299,75 @@ test_integral_constant_traits()
 	static_assert(std::is_same_v<int1, int2>);
 }
 
+void
+test_array_traits()
+{
+	// That's a difference between C and std arrays:
+	// std::array has its own cv qualifier while C passes it to values.
+	static_assert(std::is_same_v<std::add_const_t<int[3]>,
+				     const int[3]>);
+	static_assert(std::is_same_v<std::add_const_t<std::array<int, 3>>,
+				     const std::array<int, 3>>);
+
+	using carr_t = int[10];
+	using cv_carr_t = const volatile carr_t;
+	using sarr_t = std::array<int, 11>;
+	using cv_sarr_t = const volatile sarr_t;
+	enum E { V = 1 };
+	struct Test { };
+	using const_int = std::integral_constant<int, 0>;
+
+	static_assert(tnt::is_c_array_v<carr_t>);
+	static_assert(tnt::is_c_array_v<cv_carr_t>);
+	static_assert(!tnt::is_c_array_v<sarr_t>);
+	static_assert(!tnt::is_c_array_v<cv_sarr_t>);
+	static_assert(!tnt::is_c_array_v<int>);
+	static_assert(!tnt::is_c_array_v<E>);
+	static_assert(!tnt::is_c_array_v<Test>);
+	static_assert(!tnt::is_c_array_v<const_int>);
+
+	static_assert(!tnt::is_std_array_v<carr_t>);
+	static_assert(!tnt::is_std_array_v<cv_carr_t>);
+	static_assert(tnt::is_std_array_v<sarr_t>);
+	static_assert(tnt::is_std_array_v<cv_sarr_t>);
+	static_assert(!tnt::is_std_array_v<int>);
+	static_assert(!tnt::is_std_array_v<E>);
+	static_assert(!tnt::is_std_array_v<Test>);
+	static_assert(!tnt::is_std_array_v<const_int>);
+
+	static_assert(tnt::is_any_array_v<carr_t>);
+	static_assert(tnt::is_any_array_v<cv_carr_t>);
+	static_assert(tnt::is_any_array_v<sarr_t>);
+	static_assert(tnt::is_any_array_v<cv_sarr_t>);
+	static_assert(!tnt::is_any_array_v<int>);
+	static_assert(!tnt::is_any_array_v<E>);
+	static_assert(!tnt::is_any_array_v<Test>);
+	static_assert(!tnt::is_any_array_v<const_int>);
+
+	static_assert(10 == tnt::any_extent_v<carr_t>);
+	static_assert(10 == tnt::any_extent_v<cv_carr_t>);
+	static_assert(11 == tnt::any_extent_v<sarr_t>);
+	static_assert(11 == tnt::any_extent_v<cv_sarr_t>);
+	static_assert(0 == tnt::any_extent_v<int>);
+	static_assert(0 == tnt::any_extent_v<E>);
+	static_assert(0 == tnt::any_extent_v<Test>);
+	static_assert(0 == tnt::any_extent_v<const_int>);
+
+	static_assert(std::is_same_v<int, tnt::remove_any_extent_t<carr_t>>);
+	static_assert(std::is_same_v<const volatile int, tnt::remove_any_extent_t<cv_carr_t>>);
+	static_assert(std::is_same_v<int, tnt::remove_any_extent_t<sarr_t>>);
+	static_assert(std::is_same_v<int, tnt::remove_any_extent_t<cv_sarr_t>>);
+	static_assert(std::is_same_v<int, tnt::remove_any_extent_t<int>>);
+	static_assert(std::is_same_v<E, tnt::remove_any_extent_t<E>>);
+	static_assert(std::is_same_v<Test, tnt::remove_any_extent_t<Test>>);
+	static_assert(std::is_same_v<const int, tnt::remove_any_extent_t<const int>>);
+}
+
 int main()
 {
 	static_assert(tnt::always_false_v<double> == false);
 	test_tuple_utils();
 	test_integer_traits();
 	test_integral_constant_traits();
+	test_array_traits();
 }

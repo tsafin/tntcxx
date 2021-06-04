@@ -30,6 +30,7 @@
  * SUCH DAMAGE.
  */
 
+#include <array>
 #include <cassert>
 #include <tuple>
 #include <type_traits>
@@ -205,5 +206,70 @@ constexpr bool is_uni_bool_v = std::is_same_v<bool, uni_integral_base_t<T>>;
  */
 template <class T>
 constexpr bool is_uni_integer_v = is_integer_v<uni_integral_base_t<T>>;
+
+/**
+ * Check whether the type is C bounded array (with certain size), like int [10].
+ * Identical to std::is_bounded_array_v from C++20.
+ * Note that cv qualifiers for C array are passed to its elements,
+ */
+namespace details {
+template <class T>
+struct is_c_array_h : std::false_type {};
+template <class T, std::size_t N>
+struct is_c_array_h<T[N]> : std::true_type {};
+} //namespace details {
+template <class T>
+constexpr bool is_c_array_v = details::is_c_array_h<T>::value;
+
+/**
+ * Check whether the type is std::array, like std::array<int, 10>.
+ */
+namespace details {
+template <class T>
+struct is_std_array_h : std::false_type {};
+template <class T, std::size_t N>
+struct is_std_array_h<std::array<T, N>> : std::true_type {};
+} //namespace details {
+
+template <class T>
+constexpr bool is_std_array_v =
+	details::is_std_array_h<std::remove_cv_t<T>>::value;
+
+/**
+ * Check whether the type is bounded C array or std::array.
+ */
+template <class T>
+constexpr bool is_any_array_v = is_c_array_v<T> || is_std_array_v<T>;
+
+/**
+ * Safe extent getter. Gets extent of C or std array, returns 0 for other types.
+ */
+namespace details {
+template <class T>
+struct any_extent_h { static constexpr size_t size = 0; };
+template <class T, std::size_t N>
+struct any_extent_h<T[N]> { static constexpr size_t size = N; };
+template <class T, std::size_t N>
+struct any_extent_h <std::array<T, N>> { static constexpr size_t size = N; };
+} //namespace details {
+
+template <class T>
+constexpr size_t any_extent_v =
+	details::any_extent_h<std::remove_cv_t<T>>::size;
+
+/**
+ * Remove one extent from C or std array.
+ */
+namespace details {
+template <class T>
+struct remove_std_extent_h { using type = T; };
+template <class T, std::size_t N>
+struct remove_std_extent_h<std::array<T, N>> { using type = T; };
+} //namespace details {
+
+template <class T>
+using remove_any_extent_t = std::conditional_t<tnt::is_std_array_v<T>,
+	typename details::remove_std_extent_h<std::remove_cv_t<T>>::type,
+	std::remove_extent_t<T>>;
 
 } // namespace mpp {
