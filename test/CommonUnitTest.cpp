@@ -376,6 +376,23 @@ test_array_traits()
 	static_assert(!tnt::is_char_ptr_v<Test>);
 }
 
+void
+test_misc_traits()
+{
+	enum E { V = 1 };
+	struct Test { };
+	using const_int = std::integral_constant<int, 0>;
+
+	static_assert(tnt::is_ignore_v<decltype(std::ignore)>);
+	static_assert(tnt::is_ignore_v<const decltype(std::ignore)>);
+	static_assert(!tnt::is_ignore_v<E>);
+	static_assert(!tnt::is_ignore_v<Test>);
+	static_assert(!tnt::is_ignore_v<const_int>);
+	static_assert(!tnt::is_ignore_v<nullptr_t>);
+	static_assert(!tnt::is_ignore_v<void *>);
+	static_assert(!tnt::is_ignore_v<bool>);
+}
+
 int main()
 {
 	static_assert(tnt::always_false_v<double> == false);
@@ -383,4 +400,5 @@ int main()
 	test_integer_traits();
 	test_integral_constant_traits();
 	test_array_traits();
+	test_misc_traits();
 }

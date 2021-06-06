@@ -279,4 +279,12 @@ template <class T>
 constexpr bool is_char_ptr_v = std::is_pointer_v<T> &&
 	std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>;
 
+/**
+ * Check whether the type is the type of std::ignore.
+ */
+template <class T>
+constexpr bool 	is_ignore_v =
+	std::is_same_v<std::remove_cv<decltype(std::ignore)>,
+		       std::remove_cv<T>>;
+
 } // namespace mpp {
