@@ -34,6 +34,7 @@
 #include <cassert>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace tnt {
 /**
@@ -286,5 +287,28 @@ template <class T>
 constexpr bool 	is_ignore_v =
 	std::is_same_v<std::remove_cv<decltype(std::ignore)>,
 		       std::remove_cv<T>>;
+
+/**
+ * Check whether the type is std::tuple.
+ */
+namespace details {
+template <class T> struct is_tuple_h : std::false_type {};
+template <class... T> struct is_tuple_h<std::tuple<T...>> : std::true_type {};
+} //namespace details {
+
+template <class T>
+constexpr bool is_tuple_v = details::is_tuple_h<std::remove_cv_t<T>>::value;
+
+/**
+ * Check whether the type is std::pair.
+ */
+namespace details {
+template <class T> struct is_pair_h : std::false_type {};
+template <class T, class U>
+struct is_pair_h<std::pair<T, U>> : std::true_type {};
+} //namespace details {
+
+template <class T>
+constexpr bool is_pair_v = details::is_pair_h<std::remove_cv_t<T>>::value;
 
 } // namespace mpp {

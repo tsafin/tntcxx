@@ -393,6 +393,38 @@ test_misc_traits()
 	static_assert(!tnt::is_ignore_v<bool>);
 }
 
+void
+test_tuple_pair_traits()
+{
+	enum E { V = 1 };
+	struct Test { };
+	using const_int = std::integral_constant<int, 0>;
+
+	static_assert(tnt::is_tuple_v<std::tuple<int>>);
+	static_assert(tnt::is_tuple_v<std::tuple<int, int>>);
+	static_assert(tnt::is_tuple_v<std::tuple<int, float, Test, E>>);
+	static_assert(tnt::is_tuple_v<const std::tuple<int, int>>);
+	static_assert(tnt::is_tuple_v<volatile std::tuple<int, int>>);
+	static_assert(tnt::is_tuple_v<std::tuple<std::tuple<>>>);
+	static_assert(!tnt::is_tuple_v<std::pair<int, float>>);
+	static_assert(!tnt::is_tuple_v<Test>);
+	static_assert(!tnt::is_tuple_v<int>);
+	static_assert(!tnt::is_tuple_v<E>);
+	static_assert(!tnt::is_tuple_v<Test>);
+	static_assert(!tnt::is_tuple_v<const_int>);
+
+	static_assert(tnt::is_pair_v<std::pair<int, float>>);
+	static_assert(tnt::is_pair_v<const std::pair<int, float>>);
+	static_assert(tnt::is_pair_v<volatile std::pair<int, float>>);
+	static_assert(!tnt::is_pair_v<std::pair<int, float>&>);
+	static_assert(!tnt::is_pair_v<std::tuple<int, int>>);
+	static_assert(!tnt::is_pair_v<Test>);
+	static_assert(!tnt::is_pair_v<int>);
+	static_assert(!tnt::is_pair_v<E>);
+	static_assert(!tnt::is_pair_v<Test>);
+	static_assert(!tnt::is_pair_v<const_int>);
+}
+
 int main()
 {
 	static_assert(tnt::always_false_v<double> == false);
@@ -401,4 +433,5 @@ int main()
 	test_integral_constant_traits();
 	test_array_traits();
 	test_misc_traits();
+	test_tuple_pair_traits();
 }
