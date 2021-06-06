@@ -32,9 +32,11 @@
 
 #include <array>
 #include <cassert>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 namespace tnt {
 /**
@@ -310,5 +312,29 @@ struct is_pair_h<std::pair<T, U>> : std::true_type {};
 
 template <class T>
 constexpr bool is_pair_v = details::is_pair_h<std::remove_cv_t<T>>::value;
+
+/**
+ * Check whether the type is std::variant.
+ */
+namespace details {
+template <class T> struct is_variant_h : std::false_type {};
+template <class... T> struct is_variant_h<std::variant<T...>> : std::true_type {};
+} //namespace details {
+
+template <class T>
+constexpr bool is_variant_v = details::is_variant_h<std::remove_cv_t<T>>::value;
+
+/**
+ * Check whether the type is std::optional.
+ */
+namespace details {
+template <class T> struct is_optional_h : std::false_type {};
+template <class T> struct is_optional_h<std::optional<T>> : std::true_type {};
+} //namespace details {
+
+template <class T>
+constexpr bool is_optional_v =
+	details::is_optional_h<std::remove_cv_t<T>>::value;
+
 
 } // namespace mpp {

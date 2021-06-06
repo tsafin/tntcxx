@@ -391,6 +391,28 @@ test_misc_traits()
 	static_assert(!tnt::is_ignore_v<nullptr_t>);
 	static_assert(!tnt::is_ignore_v<void *>);
 	static_assert(!tnt::is_ignore_v<bool>);
+
+	static_assert(tnt::is_variant_v<std::variant<int>>);
+	static_assert(tnt::is_variant_v<std::variant<int, float>>);
+	static_assert(tnt::is_variant_v<const std::variant<int>>);
+	static_assert(tnt::is_variant_v<volatile std::variant<int>>);
+	static_assert(!tnt::is_variant_v<std::variant<int>&>);
+	static_assert(!tnt::is_variant_v<std::tuple<int, float>>);
+	static_assert(!tnt::is_variant_v<std::optional<int>>);
+	static_assert(!tnt::is_variant_v<Test>);
+	static_assert(!tnt::is_variant_v<E>);
+	static_assert(!tnt::is_variant_v<const_int>);
+
+	static_assert(tnt::is_optional_v<std::optional<int>>);
+	static_assert(tnt::is_optional_v<const std::optional<int>>);
+	static_assert(tnt::is_optional_v<volatile std::optional<int>>);
+	static_assert(!tnt::is_optional_v<std::optional<int>&>);
+	static_assert(!tnt::is_optional_v<std::variant<int>>);
+	static_assert(!tnt::is_optional_v<std::tuple<int, float>>);
+	static_assert(!tnt::is_optional_v<std::variant<int>&>);
+	static_assert(!tnt::is_optional_v<Test>);
+	static_assert(!tnt::is_optional_v<E>);
+	static_assert(!tnt::is_optional_v<const_int>);
 }
 
 void
