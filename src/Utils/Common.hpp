@@ -336,5 +336,23 @@ template <class T>
 constexpr bool is_optional_v =
 	details::is_optional_h<std::remove_cv_t<T>>::value;
 
+/**
+ * Check whether the type pointer to member (member object, not method).
+ */
+template <class T>
+constexpr bool is_member_ptr_v = std::is_member_object_pointer_v<T>;
+
+/**
+ * Safe getter that for pointer to member returns member type and original
+ * type in any other case.
+ */
+namespace details {
+template <class T> struct demember_h { using type = T; };
+template <class T, class U> struct demember_h<T U::*> { using type = T; };
+} //namespace details {
+
+template <class T>
+using demember_t = std::conditional_t<is_member_ptr_v<T>,
+	typename details::demember_h<std::remove_cv_t<T>>::type, T>;
 
 } // namespace mpp {
