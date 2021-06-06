@@ -361,6 +361,19 @@ test_array_traits()
 	static_assert(std::is_same_v<E, tnt::remove_any_extent_t<E>>);
 	static_assert(std::is_same_v<Test, tnt::remove_any_extent_t<Test>>);
 	static_assert(std::is_same_v<const int, tnt::remove_any_extent_t<const int>>);
+
+	static_assert(tnt::is_char_ptr_v<char *>);
+	static_assert(tnt::is_char_ptr_v<const volatile char *>);
+	static_assert(tnt::is_char_ptr_v<volatile char *const>);
+	static_assert(!tnt::is_char_ptr_v<signed char *>);
+	static_assert(!tnt::is_char_ptr_v<unsigned char *>);
+	static_assert(!tnt::is_char_ptr_v<char>);
+	static_assert(!tnt::is_char_ptr_v<int *>);
+	static_assert(!tnt::is_char_ptr_v<char [10]>);
+	static_assert(!tnt::is_char_ptr_v<std::array<char, 10>>);
+	static_assert(!tnt::is_char_ptr_v<int>);
+	static_assert(!tnt::is_char_ptr_v<E>);
+	static_assert(!tnt::is_char_ptr_v<Test>);
 }
 
 int main()

@@ -272,4 +272,11 @@ using remove_any_extent_t = std::conditional_t<tnt::is_std_array_v<T>,
 	typename details::remove_std_extent_h<std::remove_cv_t<T>>::type,
 	std::remove_extent_t<T>>;
 
+/**
+ * Check whether the type is (cv) pointer to (cv) char.
+ */
+template <class T>
+constexpr bool is_char_ptr_v = std::is_pointer_v<T> &&
+	std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>;
+
 } // namespace mpp {
