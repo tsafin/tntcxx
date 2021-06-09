@@ -31,6 +31,8 @@
  */
 
 #include "../Utils/CStr.hpp"
+#include "../Utils/ItrRange.hpp"
+#include "Constants.hpp"
 
 namespace mpp {
 
@@ -38,14 +40,14 @@ using std::integral_constant;
 using tnt::CStr;
 
 /**
- * Specificators a wrappers around some objects, usually holds a constant
- * reference on that object and describes how that object must be packed to
- * msgpack stream.
+ * Specificator is a wrapper around some objects, usually holds a constant
+ * reference on that object and describes how that object must be handled
+ * but msgpack codec.
  * For example std::tuple is packed as array by default, if you want it to
  * be packed as map, wrap it with mpp::as_map(<that tuple>).
  * Because of holding reference to an object a user must think about original
  * object's lifetime. The best practice is to use temporary specificator
- * objects, liks encoder.add(mpp::as_map(<that tuple>)).
+ * objects, like encoder.add(mpp::as_map(<that tuple>)).
  *
  * List of type specificators in this header (only one is allowed):
  * as_str - treat a value as string.
@@ -61,175 +63,107 @@ using tnt::CStr;
  * as_fixed - fix underlying type of msgpack object.
  *
  * List of terminal types:
- * sub_array - a part of an array (limited by given size).
  * MPP_AS_CONST - compile-time constant value (except strings).
  * MPP_AS_CONSTR - compile-time constant string value.
  */
 
 /**
- * Simple helper for advancing standard iterators.
+ * Convert rvalue references and member pointers to rvalues.
+ * Keep the original type other.
  */
-template <class ITR>
-ITR advance(ITR& itr, size_t n) { auto r = itr; std::advance(r, n); return r; }
+template <class T>
+using wrapped_t =
+	std::conditional_t<std::is_rvalue_reference_v<T> ||
+			   tnt::is_member_ptr_v<std::remove_reference_t<T>>,
+			   std::remove_cv_t<std::remove_reference_t<T>>, T>;
 
 /**
- * Range is a pair of iterators (in general meaning, pointers for example)
- * that has access methods as STL containers.
- * Should be constructed only with range(..) methods by a pair
- * of iterators or pointer and size. The size can be also passed as template
- * parameter thus declaring a range of fixed size.
- * Actual results will be one of the derivatives of Range class that will have
- * the following bool static constexpr:
- * is_fixed_size_v: the `size` method is static constexpr.
- * is_contiguous_v: the object also has standard `data` method.
- */
-template <class ITR1, class ITR2>
-struct RangeBase {
-	ITR1 m_begin;
-	ITR2 m_end;
-	ITR1 begin() const { return m_begin; }
-	const ITR2& end() const { return m_end; }
-	size_t size() const { return std::distance(m_begin, m_end); }
-};
-
-template <class ITR1, class ITR2, bool IS_FIXED_SIZE, size_t N>
-struct IteratorRange : RangeBase<ITR1, ITR2> {
-	static constexpr bool is_fixed_size_v = true;
-	static constexpr bool is_contiguous_v = false;
-	static constexpr size_t size() { return N; }
-};
-
-template <class ITR1, class ITR2>
-struct IteratorRange<ITR1, ITR2, false, 0> : RangeBase<ITR1, ITR2> {
-	static constexpr bool is_fixed_size_v = false;
-	static constexpr bool is_contiguous_v = false;
-};
-
-template <class ITR1, class ITR2, bool IS_FIXED_SIZE, size_t N>
-struct ContiguousRange : IteratorRange<ITR1, ITR2, IS_FIXED_SIZE, N> {
-	using IteratorRange<ITR1, ITR2, IS_FIXED_SIZE, N>::m_begin;
-	static constexpr bool is_contiguous_v = true;
-	auto data() const { return &*m_begin; }
-};
-
-template <class T>
-constexpr IteratorRange<const T&, const T&, false, 0>
-range(const T& begin, const T& end) { return {begin, end}; }
-
-template <class T>
-constexpr ContiguousRange<T*, T*, false, 0>
-range(T* begin, T* end) { return {begin, end}; }
-
-template <class T>
-constexpr IteratorRange<const T&, T, false, 0>
-range(const T& begin, size_t n) { return {begin, advance(begin, n)}; }
-
-template <class T>
-constexpr ContiguousRange<T*, T*, false, 0>
-range(T* begin, size_t n) { return {begin, begin + n}; }
-
-template <size_t N, class T>
-constexpr IteratorRange<const T&, T, true, N>
-range(const T& begin) { return {begin, advance(begin, N)}; }
-
-template <size_t N, class T>
-constexpr ContiguousRange<T*, T*, true, N>
-range(T* begin) { return {begin, begin + N}; }
-
-/**
- * A group of specificators - as_str(..), as_bin(..), as_arr(..), as_map(..),
- * as_raw(..), reserve(...).
- * They create SimpleWrapper with appropriate properties.
- * A wrapper takes a container or a range and specify explicitly how it must
- * be packed/unpacked as msgpack object.
+ * A group of specificators - as_str(..), as_bin(..), as_arr(..), as_map(..).
+ * They create CommonWrapper with appropriate properties.
+ * A wrapper takes a container and specify explicitly how it must be
+ * packed/unpacked as msgpack object.
  * A bit outstanding is 'as_raw' - it means that the data passed is expected
  * to be a valid msgpack object and must be just copied to the stream.
  * Another outstanding wrapper is 'reserve' - it means some number of bytes
  * must be skipped * (not written) in msgpack stream..
- * Specificators also accept the same arguments as range(..), in that case
- * it's a synonym of as_xxx(range(...)).
  */
-#define DEFINE_ARRLIKE_WRAPPER(name)						\
-template <class T>								\
-struct name##_holder {								\
-	using type = T;								\
-	const T& value;								\
-};										\
-										\
-template <class... T>								\
-constexpr auto as_##name(const T&... t)						\
-{										\
-	if constexpr (sizeof ... (T) == 1) {					\
-		return name##_holder<T...>{t...};				\
-	} else {								\
-		using range_t = decltype(range(t...));				\
-		return name##_holder<range_t>(range(t...));			\
-	}									\
-}										\
-										\
-template <size_t N, class... T>							\
-constexpr auto as_##name(const T&... t)						\
-{										\
-	using range_t = decltype(range<N>(t...));				\
-	return name##_holder<range_t>(range<N>(t...));				\
-}										\
-										\
-struct forgot_to_add_semicolon
+template <compact::Type TYPE, class T>
+struct CommonWrapper {
+	static constexpr compact::Type type = TYPE;
+	T value;
+};
 
-DEFINE_ARRLIKE_WRAPPER(str);
-DEFINE_ARRLIKE_WRAPPER(bin);
-DEFINE_ARRLIKE_WRAPPER(arr);
-DEFINE_ARRLIKE_WRAPPER(map);
-DEFINE_ARRLIKE_WRAPPER(raw);
+template <compact::Type TYPE, class T>
+auto as_simple(T&& t)
+{
+	return CommonWrapper<TYPE, wrapped_t<T>>{std::forward<T>(t)};
+}
 
-#undef DEFINE_ARRLIKE_WRAPPER
+template <class T>
+auto as_str(T&& t)
+{
+	return as_simple<compact::MP_STR>(std::forward<T>(t));
+}
+
+template <class T>
+auto as_bin(T&& t)
+{
+	return as_simple<compact::MP_BIN>(std::forward<T>(t));
+}
+
+template <class T>
+auto as_arr(T&& t)
+{
+	return as_simple<compact::MP_ARR>(std::forward<T>(t));
+}
+
+template <class T>
+auto as_map(T&& t)
+{
+	return as_simple<compact::MP_MAP>(std::forward<T>(t));
+}
 
 /**
- * Specificator - as_ext(..). Creates a wrapper ext_holder that holds ext type
+ * Specificator - as_ext(..). Creates a wrapper ExtWrapper that holds ext type
  * and a container (or range) and specifies that the data must packed/unpacked
  * as MP_EXIT msgpack object.
- * Specificator also accepts the same arguments as range(..), in that case
- * it's a synonym of as_ext(type, range(...)).
  */
-template <class T>
-struct ext_holder {
-	using type = T;
-	uint8_t ext_type;
-	const T& value;
+template <class EXT_T, class T>
+struct ExtWrapper {
+	static constexpr compact::Type type = compact::MP_EXT;
+	EXT_T ext_type;
+	T value;
 };
 
-template <class... T>
-auto as_ext(uint8_t type, T&&... t)
+template <class EXT_T, class T>
+auto as_ext(EXT_T&& ext_type, T&& t)
 {
-	if constexpr (sizeof...(T) == 1) {
-		return ext_holder<T...>{type, t...};
-	} else {
-		using range_t = decltype(range(std::forward<T>(t)...));
-		return ext_holder<range_t>{type, range(std::forward<T>(t)...)};
-	}
-}
-
-template <size_t N, class... T>
-auto as_ext(uint8_t type, T&&... t)
-{
-	using range_t = decltype(range<N>(std::forward<T>(t)...));
-	return ext_holder<range_t>{type, range<N>(std::forward<T>(t)...)};
+	using WEXT_T = wrapped_t<EXT_T>;
+	using WT = wrapped_t<T>;
+	return ExtWrapper<WEXT_T, WT>{std::forward<EXT_T>(ext_type),
+				      std::forward<T>(t)};
 }
 
 /**
- * Specificator - track(..). Creates a wrapper track_holder that holds a value
+ * Specificator - track(..). Creates a wrapper TrackWrapper that holds a value
  * and a range - a pair of iterators. The first iterator will be set to the
- * beginning of written msgpack object, the second - at the end of it.
+ * beginning of msgpack object, the second - at the end of it.
 */
 template <class T, class RANGE>
-struct track_holder {
-	using type = T;
-	const T& value;
-	RANGE& range;
+struct TrackWrapper {
+	const T value;
+	RANGE range;
 };
 
 template <class T, class RANGE>
-track_holder<T, RANGE> track(const T& t, RANGE& r) { return {t, r}; }
+TrackWrapper<T, RANGE> track(T&& t, RANGE&& r)
+{
+	using RR_RANGE = std::remove_reference_t<RANGE>;
+	static_assert(tnt::is_itr_range_v<tnt::demember_t<RR_RANGE>>);
+	using
+	return TrackWrapper<wrapped_t<T>, wrapped_t<RANGE>>{std
+	 {t, r};
+}
 
 /**
  * Reserve is an object that specifies that some number of bytes must be skipped
@@ -313,3 +247,7 @@ fixed_holder<T, T> as_fixed(const T& t) { return {t}; }
 #endif // #ifdef MPP_USE_SHORT_CONST_MACROS
 
 }; // namespace mpp {
+
+namespace tnt {
+using mpp::subst;
+}
