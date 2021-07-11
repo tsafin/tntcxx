@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <any>
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
