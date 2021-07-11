@@ -30,9 +30,9 @@
  * SUCH DAMAGE.
  */
 #include "../src/Buffer/Buffer.hpp"
-#include "../src/mpp/mpp.hpp"
-#include "../src/mpp/Dec.hpp"
 #include "../src/Client/ResponseDecoder.hpp"
+#include "../src/mpp/Dec.hpp"
+#include "../src/mpp/mpp.hpp"
 
 /** Corresponds to data stored in _space[512]. */
 struct UserTuple {
@@ -41,11 +41,11 @@ struct UserTuple {
 	double field3;
 };
 
-std::ostream&
-operator<<(std::ostream& strm, const UserTuple &t)
+std::ostream &
+operator<<(std::ostream &strm, const UserTuple &t)
 {
-	return strm << "Tuple: field1=" << t.field1 << " field2=" << t.field2 <<
-		    " field3=" << t.field3;
+	return strm << "Tuple: field1=" << t.field1 << " field2=" << t.field2
+		    << " field3=" << t.field3;
 }
 
 using Buf_t = tnt::Buffer<16 * 1024>;
@@ -53,17 +53,20 @@ using Buf_t = tnt::Buffer<16 * 1024>;
 template <class BUFFER>
 struct TupleValueReader : mpp::DefaultErrorHandler {
 	using BufIter_t = typename BUFFER::iterator;
-	explicit TupleValueReader(mpp::Dec<BUFFER>& d, UserTuple& t) : dec(d), tuple(t) {}
-	static constexpr mpp::Type VALID_TYPES = mpp::MP_UINT | mpp::MP_STR | mpp::MP_DBL;
+	explicit TupleValueReader(mpp::Dec<BUFFER> &d, UserTuple &t)
+		: dec(d), tuple(t)
+	{}
+	static constexpr mpp::Type VALID_TYPES =
+		mpp::MP_UINT | mpp::MP_STR | mpp::MP_DBL;
 	template <class T>
-	void Value(const BufIter_t&, mpp::compact::Type, T v)
+	void Value(const BufIter_t &, mpp::compact::Type, T v)
 	{
 		using A = UserTuple;
 		static constexpr std::tuple map(&A::field1, &A::field3);
 		auto ptr = std::get<std::decay_t<T> A::*>(map);
 		tuple.*ptr = v;
 	}
-	void Value(BufIter_t& itr, mpp::compact::Type, mpp::StrValue v)
+	void Value(BufIter_t &itr, mpp::compact::Type, mpp::StrValue v)
 	{
 		BufIter_t tmp = itr;
 		tmp += v.offset;
@@ -76,50 +79,54 @@ struct TupleValueReader : mpp::DefaultErrorHandler {
 	}
 	void WrongType(mpp::Type expected, mpp::Type got)
 	{
-		std::cout << "expected type is " << expected << " but got " <<
-			got << std::endl;
+		std::cout << "expected type is " << expected << " but got "
+			  << got << std::endl;
 	}
-	BufIter_t* StoreEndIterator() { return nullptr; }
-	mpp::Dec<BUFFER>& dec;
-	UserTuple& tuple;
+	BufIter_t *StoreEndIterator() { return nullptr; }
+	mpp::Dec<BUFFER> &dec;
+	UserTuple &tuple;
 };
 
 template <class BUFFER>
 struct ArrayReader : mpp::DefaultErrorHandler {
 	using BufIter_t = typename BUFFER::iterator;
-	explicit ArrayReader(mpp::Dec<BUFFER>& d, UserTuple& t) : dec(d), tuple(t) {}
+	explicit ArrayReader(mpp::Dec<BUFFER> &d, UserTuple &t)
+		: dec(d), tuple(t)
+	{}
 	static constexpr mpp::Type VALID_TYPES = mpp::MP_ARR;
 
-	void Value(const BufIter_t&, mpp::compact::Type, mpp::ArrValue)
+	void Value(const BufIter_t &, mpp::compact::Type, mpp::ArrValue)
 	{
-		dec.SetReader(false, TupleValueReader{dec, tuple});
+		dec.SetReader(false, TupleValueReader { dec, tuple });
 	}
-	BufIter_t* StoreEndIterator() { return nullptr; }
-	mpp::Dec<BUFFER>& dec;
-	UserTuple& tuple;
+	BufIter_t *StoreEndIterator() { return nullptr; }
+	mpp::Dec<BUFFER> &dec;
+	UserTuple &tuple;
 };
 
 /** Parse extra array and save iterators to the corresponding tuples. */
 template <class BUFFER>
 struct SelectArrayReader : mpp::DefaultErrorHandler {
 	using BufIter_t = typename BUFFER::iterator;
-	explicit SelectArrayReader(mpp::Dec<BUFFER>& d, std::vector<BufIter_t> &t,
-				   size_t &fc) : dec(d), tuples(t),
-				   field_count(fc) {}
-	static constexpr mpp::Type VALID_TYPES =  mpp::MP_ANY;
+	explicit SelectArrayReader(mpp::Dec<BUFFER> &d,
+				   std::vector<BufIter_t> &t, size_t &fc)
+		: dec(d), tuples(t), field_count(fc)
+	{}
+	static constexpr mpp::Type VALID_TYPES = mpp::MP_ANY;
 	template <class T>
-	void Value(BufIter_t& arg, mpp::compact::Type, T)
+	void Value(BufIter_t &arg, mpp::compact::Type, T)
 	{
 		tuples.emplace_back(arg);
 		dec.Skip();
 	}
-	void Value(const BufIter_t&, mpp::compact::Type, mpp::ArrValue arr)
+	void Value(const BufIter_t &, mpp::compact::Type, mpp::ArrValue arr)
 	{
 		field_count = arr.size;
-		dec.SetReader(false, SelectArrayReader{dec, tuples, field_count});
+		dec.SetReader(false,
+			      SelectArrayReader { dec, tuples, field_count });
 	}
-	BufIter_t* StoreEndIterator() { return nullptr; }
-	mpp::Dec<BUFFER>& dec;
+	BufIter_t *StoreEndIterator() { return nullptr; }
+	mpp::Dec<BUFFER> &dec;
 	std::vector<BufIter_t> &tuples;
 	size_t &field_count;
 };
@@ -129,12 +136,12 @@ std::vector<UserTuple>
 decodeUserTuple(BUFFER &buf, Data<BUFFER> &data)
 {
 	std::vector<UserTuple> results;
-	for(auto& t: data.tuples) {
+	for (auto &t : data.tuples) {
 		assert(data.end != t.begin);
 		UserTuple tuple;
 		mpp::Dec dec(buf);
 		dec.SetPosition(t.begin);
-		dec.SetReader(false, ArrayReader<BUFFER>{dec, tuple});
+		dec.SetReader(false, ArrayReader<BUFFER> { dec, tuple });
 		mpp::ReadResult_t res = dec.Read();
 		assert(res == mpp::READ_SUCCESS);
 		(void)res;
@@ -147,18 +154,18 @@ template <class BUFFER>
 std::vector<UserTuple>
 decodeMultiReturn(BUFFER &buf, Data<BUFFER> &data)
 {
-	auto& t = data.tuples[0];
+	auto &t = data.tuples[0];
 	assert(data.end != t.begin);
 	UserTuple tuple;
 	mpp::Dec dec(buf);
 	dec.SetPosition(t.begin);
-	dec.SetReader(false, TupleValueReader<BUFFER>{dec, tuple});
+	dec.SetReader(false, TupleValueReader<BUFFER> { dec, tuple });
 	for (size_t i = 0; i < data.dimension; ++i) {
 		mpp::ReadResult_t res = dec.Read();
 		assert(res == mpp::READ_SUCCESS);
-		(void) res;
+		(void)res;
 	}
-	return std::vector<UserTuple>({tuple});
+	return std::vector<UserTuple>({ tuple });
 }
 
 template <class BUFFER>
@@ -166,19 +173,19 @@ std::vector<UserTuple>
 decodeSelectReturn(BUFFER &buf, Data<BUFFER> &data)
 {
 	std::vector<UserTuple> results;
-	auto& t = data.tuples[0];
+	auto &t = data.tuples[0];
 	mpp::Dec dec(buf);
 	dec.SetPosition(t.begin);
 	std::vector<typename BUFFER::iterator> itrs;
 	size_t tuple_sz = 0;
-	dec.SetReader(false, SelectArrayReader{dec, itrs, tuple_sz});
+	dec.SetReader(false, SelectArrayReader { dec, itrs, tuple_sz });
 	mpp::ReadResult_t res = dec.Read();
 	assert(res == mpp::READ_SUCCESS);
 	(void)res;
 	for (auto itr : itrs) {
 		UserTuple tuple;
 		dec.SetPosition(itr);
-		dec.SetReader(false, TupleValueReader<BUFFER>{dec, tuple});
+		dec.SetReader(false, TupleValueReader<BUFFER> { dec, tuple });
 		for (size_t i = 0; i < tuple_sz; ++i) {
 			mpp::ReadResult_t res = dec.Read();
 			assert(res == mpp::READ_SUCCESS);

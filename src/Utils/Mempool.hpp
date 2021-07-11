@@ -38,27 +38,32 @@
 namespace tnt {
 
 template <bool ENABLE_STATS>
-class MempoolStats {
+class MempoolStats
+{
 protected:
 	void statAddSlab() { ++m_SlabCount; }
 	void statAddBlock() { ++m_BlockCount; }
 	void statDelBlock() { --m_BlockCount; }
+
 public:
 	/** Count of allocated (used) blocks. */
 	size_t statBlockCount() const { return m_BlockCount; }
 	/** Count of allocated (total) slabs. */
 	size_t statSlabCount() const { return m_SlabCount; }
+
 private:
 	size_t m_SlabCount = 0;
 	size_t m_BlockCount = 0;
 };
 
 template <>
-class MempoolStats<false> {
+class MempoolStats<false>
+{
 protected:
-	void statAddSlab() { }
-	void statAddBlock() { }
-	void statDelBlock() { }
+	void statAddSlab() {}
+	void statAddBlock() {}
+	void statDelBlock() {}
+
 public:
 	/** Disabled. return SIZE_MAX. */
 	size_t statBlockCount() const { return SIZE_MAX; }
@@ -82,16 +87,17 @@ public:
  * @tparam ENABLE_STATS enable stat calculation.
  */
 template <size_t B, size_t M = 256, bool ENABLE_STATS = false>
-class MempoolInstance : public MempoolStats<ENABLE_STATS> {
+class MempoolInstance : public MempoolStats<ENABLE_STATS>
+{
 private:
 	static_assert(B >= sizeof(void *), "Block size is too small");
 	static_assert(M > 1, "Multiplicator is too small");
-	static_assert(B * M % sizeof(void*) == 0, "Alignment is too low");
+	static_assert(B * M % sizeof(void *) == 0, "Alignment is too low");
 
 	/* Alignment of block. */
 	static constexpr size_t BA = (B ^ (B - 1)) / 2 + 1;
 	/* Alignment of slab. */
-	static constexpr size_t SA = BA > sizeof(void*) ? BA : sizeof(void*);
+	static constexpr size_t SA = BA > sizeof(void *) ? BA : sizeof(void *);
 	static_assert((BA & (BA - 1)) == 0, "Smth went wrong");
 	static_assert((SA & (SA - 1)) == 0, "Smth went wrong");
 	static_assert(BA <= B, "Smth went wrong");
@@ -99,12 +105,12 @@ private:
 	struct alignas(SA) Slab {
 		Slab *next;
 		char data[B * M - sizeof(next)];
-		explicit Slab(Slab *list) : next(list) { }
+		explicit Slab(Slab *list) : next(list) {}
 	};
 	static_assert(sizeof(Slab) == B * M, "Smth went wrong");
 	static constexpr size_t FIRST_OFFSET = B - sizeof(Slab::next);
 
-	using Stats_t = MempoolStats<ENABLE_STATS>; 
+	using Stats_t = MempoolStats<ENABLE_STATS>;
 
 public:
 	// Constants for stat.
@@ -123,7 +129,7 @@ public:
 			delete tmp;
 		}
 	}
-	static MempoolInstance& defaultInstance()
+	static MempoolInstance &defaultInstance()
 	{
 		static MempoolInstance instance;
 		return instance;
@@ -152,7 +158,7 @@ public:
 	void deallocate(char *ptr) noexcept
 	{
 #ifndef NDEBUG
-		const char* trash = "\xab\xad\xba\xbe";
+		const char *trash = "\xab\xad\xba\xbe";
 		for (size_t i = 0; i < B; i++)
 			ptr[i] = trash[i % 4];
 #endif
@@ -184,11 +190,11 @@ public:
 		}
 
 		if constexpr (ENABLE_STATS) {
-			size_t sc =  Stats_t::statSlabCount();
+			size_t sc = Stats_t::statSlabCount();
 			if (calc_slab_count != sc)
 				res |= 1;
 
-			size_t bc =  Stats_t::statBlockCount();
+			size_t bc = Stats_t::statBlockCount();
 			size_t total_block_count = sc * (M - 1);
 			size_t prealloc = (m_SlabDataEnd - m_SlabDataBeg) / B;
 			size_t expect_free = total_block_count - prealloc - bc;
@@ -216,15 +222,17 @@ private:
  * @sa MempoolInstance.
  */
 template <size_t B, size_t M = 256, bool ENABLE_STATS = false>
-class MempoolHolder {
+class MempoolHolder
+{
 private:
 	using Base_t = MempoolInstance<B, M, ENABLE_STATS>;
+
 public:
 	MempoolHolder() : m_Instance(Base_t::defaultInstance()) {}
 	explicit MempoolHolder(Base_t &instance) : m_Instance(instance) {}
 	char *allocate() { return m_Instance.allocate(); }
 	void deallocate(char *ptr) noexcept { m_Instance.deallocate(ptr); }
-	int selfcheck() const { return m_Instance.selfcheck(); } 
+	int selfcheck() const { return m_Instance.selfcheck(); }
 
 	static constexpr size_t REAL_SIZE = Base_t::REAL_SIZE;
 	static constexpr size_t BLOCK_SIZE = Base_t::BLOCK_SIZE;
@@ -235,6 +243,7 @@ public:
 	size_t statBlockCount() const { return m_Instance.statBlockCount(); }
 	/** See MempoolStats<ENABLE_STATS>::statSlabCount() description. */
 	size_t statSlabCount() const { return m_Instance.statSlabCount(); }
+
 private:
 	Base_t &m_Instance;
 };
@@ -246,14 +255,19 @@ private:
  * @sa MempoolInstance.
  */
 template <size_t B, size_t M = 256, bool ENABLE_STATS = false>
-class MempoolStatic {
+class MempoolStatic
+{
 private:
 	using Base_t = MempoolInstance<B, M, ENABLE_STATS>;
-	static Base_t& instance() { return Base_t::defaultInstance(); }
+	static Base_t &instance() { return Base_t::defaultInstance(); }
+
 public:
 	static char *allocate() { return instance().allocate(); }
-	static void deallocate(char *ptr) noexcept { instance().deallocate(ptr); }
-	int selfcheck() const { return instance().selfcheck(); } 
+	static void deallocate(char *ptr) noexcept
+	{
+		instance().deallocate(ptr);
+	}
+	int selfcheck() const { return instance().selfcheck(); }
 
 	static constexpr size_t REAL_SIZE = Base_t::REAL_SIZE;
 	static constexpr size_t BLOCK_SIZE = Base_t::BLOCK_SIZE;

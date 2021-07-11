@@ -29,34 +29,37 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include <chrono>
 #include "Logger.hpp"
+#include <chrono>
 
-class Timer {
+class Timer
+{
 public:
-	Timer(int timeout) : m_Timeout{std::chrono::milliseconds{timeout}} {};
-	void start()
-	{
-		m_Start = std::chrono::steady_clock::now();
-	}
+	Timer(int timeout)
+		: m_Timeout { std::chrono::milliseconds { timeout } } {};
+	void start() { m_Start = std::chrono::steady_clock::now(); }
 	bool isExpired() const
 	{
-		if (m_Timeout == std::chrono::milliseconds{0})
+		if (m_Timeout == std::chrono::milliseconds { 0 })
 			return false;
 		std::chrono::time_point<std::chrono::steady_clock> end =
 			std::chrono::steady_clock::now();
 		std::chrono::milliseconds elapsed =
-			std::chrono::duration_cast<std::chrono::milliseconds>(end - m_Start);
+			std::chrono::duration_cast<std::chrono::milliseconds>(
+				end - m_Start);
 		return elapsed >= m_Timeout;
 	}
 	int elapsed() const
 	{
-		if (m_Timeout == std::chrono::milliseconds{0})
+		if (m_Timeout == std::chrono::milliseconds { 0 })
 			return 0;
 		std::chrono::time_point<std::chrono::steady_clock> end =
 			std::chrono::steady_clock::now();
-		return std::chrono::duration_cast<std::chrono::milliseconds>(end - m_Start).count();
+		return std::chrono::duration_cast<std::chrono::milliseconds>(
+			       end - m_Start)
+			.count();
 	}
+
 private:
 	std::chrono::milliseconds m_Timeout;
 	std::chrono::time_point<std::chrono::steady_clock> m_Start;

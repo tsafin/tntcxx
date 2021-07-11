@@ -37,9 +37,9 @@
 #include <cstring>
 #include <type_traits>
 
-#include "../Utils/Mempool.hpp"
-#include "../Utils/List.hpp"
 #include "../Utils/CStr.hpp"
+#include "../Utils/List.hpp"
+#include "../Utils/Mempool.hpp"
 #include "../Utils/Wrappers.hpp"
 
 namespace tnt {
@@ -64,10 +64,10 @@ class Buffer
 private:
 	/** =============== Block definition =============== */
 	/** Blocks are organized into linked list. */
-	struct Block : SingleLink<Block>
-	{
-		Block(List<Block>& addTo, size_t aid)
-			: SingleLink<Block>(addTo, true), id(aid) {}
+	struct Block : SingleLink<Block> {
+		Block(List<Block> &addTo, size_t aid)
+			: SingleLink<Block>(addTo, true), id(aid)
+		{}
 
 		/**
 		 * Each block is enumerated with incrementally increasing
@@ -89,17 +89,17 @@ private:
 		/**
 		 * Default new/delete are prohibited.
 		 */
-		void* operator new(size_t size) = delete;
+		void *operator new(size_t size) = delete;
 		void operator delete(void *ptr) = delete;
 
-		char  *begin() { return data; }
-		char  *end()   { return data + DATA_SIZE; }
+		char *begin() { return data; }
+		char *end() { return data + DATA_SIZE; }
 		// Find a block by pointer to its data (any byte of it).
 		// The pointer must point to one of characters in data member.
 		static Block *byPtr(const char *p)
 		{
-			return (Block *) (((uintptr_t) p & ~(N - 1)) |
-					  (N - allocator::REAL_SIZE));
+			return (Block *)(((uintptr_t)p & ~(N - 1)) |
+					 (N - allocator::REAL_SIZE));
 		}
 	};
 
@@ -120,17 +120,22 @@ public:
 	/** =============== Iterator definition =============== */
 	// Dummy class to be a base of light_iterator.
 	struct light_base {
-		template <class ...T>
-		light_base(const T&...) {}
-		static const bool insert, remove, unlink, isDetached, isFirst, isLast, next, prev, selfCheck;
+		template <class... T>
+		light_base(const T &...)
+		{}
+		static const bool insert, remove, unlink, isDetached, isFirst,
+			isLast, next, prev, selfCheck;
 	};
 	template <bool LIGHT>
 	class iterator_common
 		: public std::iterator<std::input_iterator_tag, char>,
-		  public std::conditional_t<LIGHT, light_base, SingleLink<iterator_common<LIGHT>>>
+		  public std::conditional_t<LIGHT, light_base,
+					    SingleLink<iterator_common<LIGHT>>>
 	{
 	public:
-		using Base_t = std::conditional_t<LIGHT, light_base, SingleLink<iterator_common<LIGHT>>>;
+		using Base_t =
+			std::conditional_t<LIGHT, light_base,
+					   SingleLink<iterator_common<LIGHT>>>;
 		USING_LIST_LINK_METHODS(Base_t);
 
 		iterator_common();
@@ -142,23 +147,26 @@ public:
 
 		iterator_common<true> enlight() const noexcept;
 
-		iterator_common& operator = (const iterator_common& other) = delete;
-		iterator_common& operator = (iterator_common& other);
-		iterator_common& operator = (iterator_common&& other) noexcept = default;
-		iterator_common& operator ++ ();
-		iterator_common& operator += (size_t step);
-		iterator_common operator + (size_t step);
-		const char& operator * () const { return *m_position; }
-		char& operator * () { return *m_position; }
+		iterator_common &
+		operator=(const iterator_common &other) = delete;
+		iterator_common &operator=(iterator_common &other);
+		iterator_common &
+		operator=(iterator_common &&other) noexcept = default;
+		iterator_common &operator++();
+		iterator_common &operator+=(size_t step);
+		iterator_common operator+(size_t step);
+		const char &operator*() const { return *m_position; }
+		char &operator*() { return *m_position; }
 		template <bool OTHER_LIGHT>
-		bool operator == (const iterator_common<OTHER_LIGHT> &a) const;
+		bool operator==(const iterator_common<OTHER_LIGHT> &a) const;
 		template <bool OTHER_LIGHT>
-		bool operator != (const iterator_common<OTHER_LIGHT> &a) const;
+		bool operator!=(const iterator_common<OTHER_LIGHT> &a) const;
 		template <bool OTHER_LIGHT>
-		bool operator  < (const iterator_common<OTHER_LIGHT> &a) const;
+		bool operator<(const iterator_common<OTHER_LIGHT> &a) const;
 		template <bool OTHER_LIGHT>
-		size_t operator - (const iterator_common<OTHER_LIGHT> &a) const;
+		size_t operator-(const iterator_common<OTHER_LIGHT> &a) const;
 		bool has_contiguous(size_t size) const;
+
 	private:
 		/** Adjust iterator_common's position in list of iterators after
 		 * moveForward. */
@@ -177,18 +185,24 @@ public:
 
 	/** =============== Buffer definition =============== */
 	/** Copy of any kind is disabled. */
-	Buffer(const allocator& all = allocator());
-	Buffer(const Buffer& buf) = delete;
-	Buffer& operator = (const Buffer& buf) = delete;
+	Buffer(const allocator &all = allocator());
+	Buffer(const Buffer &buf) = delete;
+	Buffer &operator=(const Buffer &buf) = delete;
 	~Buffer();
 
 	/**
 	 * Return iterator pointing to the start/end of buffer.
 	 */
 	template <bool LIGHT>
-	iterator_common<LIGHT> begin() { return iterator_common<LIGHT>(this, m_begin, true); }
+	iterator_common<LIGHT> begin()
+	{
+		return iterator_common<LIGHT>(this, m_begin, true);
+	}
 	template <bool LIGHT>
-	iterator_common<LIGHT> end() { return iterator_common<LIGHT>(this, m_end, false); }
+	iterator_common<LIGHT> end()
+	{
+		return iterator_common<LIGHT>(this, m_end, false);
+	}
 	iterator begin() { return iterator(this, m_begin, true); }
 	iterator end() { return iterator(this, m_end, false); }
 	/**
@@ -197,7 +211,7 @@ public:
 	 */
 	void addBack(wrap::Data data);
 	template <class T>
-	void addBack(const T& t);
+	void addBack(const T &t);
 	template <char... C>
 	void addBack(CStr<C...>);
 	void addBack(wrap::Advance advance);
@@ -208,7 +222,7 @@ public:
 	/**
 	 * Get and set current end of the buffer.
 	 */
-	char* getEnd() noexcept;
+	char *getEnd() noexcept;
 	void setEnd(char *) noexcept;
 
 	/**
@@ -216,18 +230,24 @@ public:
 	 * unless disarmed.
 	 */
 	struct EndGuard {
-		EndGuard(Buffer &buf) noexcept : m_buffer(buf), m_end(buf.getEnd()) {}
+		EndGuard(Buffer &buf) noexcept
+			: m_buffer(buf), m_end(buf.getEnd())
+		{}
 		~EndGuard() noexcept;
-		EndGuard(const EndGuard&) = delete;
-		EndGuard& operator=(const EndGuard&) = delete;
+		EndGuard(const EndGuard &) = delete;
+		EndGuard &operator=(const EndGuard &) = delete;
 		void arm(bool armed = true) noexcept { m_disarmed = !armed; }
-		void disarm(bool disarmed = true) noexcept { m_disarmed = disarmed; }
+		void disarm(bool disarmed = true) noexcept
+		{
+			m_disarmed = disarmed;
+		}
+
 	private:
 		bool m_disarmed = false;
 		Buffer &m_buffer;
 		char *m_end;
 	};
-	EndGuard endGuard() { return EndGuard{*this}; }
+	EndGuard endGuard() { return EndGuard { *this }; }
 
 	/**
 	 * Insert free space of size @a size at the position @a itr pointing to.
@@ -249,37 +269,38 @@ public:
 	 * position in buffer @a itr pointing to.
 	 */
 	template <bool LIGHT>
-	void set(const iterator_common<LIGHT> &itr, const char *buf, size_t size);
+	void set(const iterator_common<LIGHT> &itr, const char *buf,
+		 size_t size);
 	template <class T, bool LIGHT>
-	void set(const iterator_common<LIGHT> &itr, T&& t);
+	void set(const iterator_common<LIGHT> &itr, T &&t);
 
 	/**
 	 * Copy content of data iterator pointing to to the buffer @a buf of
 	 * size @a size.
 	 */
 	template <bool LIGHT>
-	void get(const iterator_common<LIGHT>& itr, char *buf, size_t size);
+	void get(const iterator_common<LIGHT> &itr, char *buf, size_t size);
 	template <class T, bool LIGHT>
-	void get(const iterator_common<LIGHT>& itr, T& t);
+	void get(const iterator_common<LIGHT> &itr, T &t);
 	template <class T, bool LIGHT>
-	T get(const iterator_common<LIGHT>& itr);
+	T get(const iterator_common<LIGHT> &itr);
 
 	/**
 	 * Copy content of data iterator pointing to to the buffer @a buf of
 	 * size @a size. Advance the iterator to the end of value.
 	 */
 	template <bool LIGHT>
-	void read(iterator_common<LIGHT>& itr, char *buf, size_t size);
+	void read(iterator_common<LIGHT> &itr, char *buf, size_t size);
 	template <class T, bool LIGHT>
-	void read(iterator_common<LIGHT>& itr, T& t);
+	void read(iterator_common<LIGHT> &itr, T &t);
 	template <class T, bool LIGHT>
-	T read(iterator_common<LIGHT>& itr);
+	T read(iterator_common<LIGHT> &itr);
 
 	/**
 	 * Determine whether the buffer has @a size bytes after @ itr.
 	 */
 	template <bool LIGHT>
-	bool has(const iterator_common<LIGHT>& itr, size_t size);
+	bool has(const iterator_common<LIGHT> &itr, size_t size);
 
 	/**
 	 * Drop data till the first existing iterator. In case there's
@@ -294,12 +315,12 @@ public:
 	 * blocks).
 	 */
 	template <bool LIGHT>
-	size_t getIOV(const iterator_common<LIGHT> &itr,
-	       struct iovec *vecs, size_t max_size);
+	size_t getIOV(const iterator_common<LIGHT> &itr, struct iovec *vecs,
+		      size_t max_size);
 	template <bool LIGHT1, bool LIGHT2>
 	size_t getIOV(const iterator_common<LIGHT1> &start,
-		      const iterator_common<LIGHT2> &end,
-		      struct iovec *vecs, size_t max_size);
+		      const iterator_common<LIGHT2> &end, struct iovec *vecs,
+		      size_t max_size);
 
 	/** Return true if there's no data in the buffer. */
 	bool empty() const { return m_begin == m_end; }
@@ -310,7 +331,7 @@ public:
 	static int blockSize() { return N; }
 #ifndef NDEBUG
 	/** Print content of buffer to @a output in human-readable format. */
-	template<size_t size, class alloc>
+	template <size_t size, class alloc>
 	friend std::string dump(Buffer<size, alloc> &buffer);
 #endif
 private:
@@ -330,7 +351,9 @@ private:
 };
 
 // Macro that explains to compiler that the expression os always true.
-#define TNT_INV(expr) if (!(expr)) (assert(false), __builtin_unreachable())
+#define TNT_INV(expr)                                                          \
+	if (!(expr))                                                           \
+	(assert(false), __builtin_unreachable())
 
 #define TNT_LIKELY(expr) __builtin_expect(!!(expr), 1)
 #define TNT_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
@@ -342,7 +365,7 @@ Buffer<N, allocator>::newBlock(size_t block_id)
 	char *ptr = m_all.allocate();
 	assert(ptr != nullptr);
 	assert((uintptr_t(ptr) + m_all.REAL_SIZE) % N == 0);
-	return ::new(ptr) Block(m_blocks, block_id);
+	return ::new (ptr) Block(m_blocks, block_id);
 }
 
 template <size_t N, class allocator>
@@ -401,39 +424,34 @@ Buffer<N, allocator>::isEndOfBlock(const char *ptr)
 	 * That means that end-of-block address is round in terms of N.
 	 */
 	return addr % N == 0;
- }
+}
 
 template <size_t N, class allocator>
 template <bool LIGHT>
 Buffer<N, allocator>::iterator_common<LIGHT>::iterator_common()
 	: m_position(nullptr)
-{
-}
+{}
 
 template <size_t N, class allocator>
 template <bool LIGHT>
 Buffer<N, allocator>::iterator_common<LIGHT>::iterator_common(Buffer *buffer,
 							      char *offset,
 							      bool is_head)
-	: Base_t(buffer->m_iterators, !is_head),
-	  m_position(offset)
-{
-}
+	: Base_t(buffer->m_iterators, !is_head), m_position(offset)
+{}
 
 template <size_t N, class allocator>
 template <bool LIGHT>
 Buffer<N, allocator>::iterator_common<LIGHT>::iterator_common(char *offset)
 	: m_position(offset)
-{
-}
+{}
 
 template <size_t N, class allocator>
 template <bool LIGHT>
-Buffer<N, allocator>::iterator_common<LIGHT>::iterator_common(iterator_common& other)
-	: Base_t(other, false),
-	  m_position(other.m_position)
-{
-}
+Buffer<N, allocator>::iterator_common<LIGHT>::iterator_common(
+	iterator_common &other)
+	: Base_t(other, false), m_position(other.m_position)
+{}
 
 template <size_t N, class allocator>
 template <bool LIGHT>
@@ -445,8 +463,8 @@ Buffer<N, allocator>::iterator_common<LIGHT>::enlight() const noexcept
 
 template <size_t N, class allocator>
 template <bool LIGHT>
-typename Buffer<N, allocator>::template iterator_common<LIGHT>&
-Buffer<N, allocator>::iterator_common<LIGHT>::operator= (iterator_common& other)
+typename Buffer<N, allocator>::template iterator_common<LIGHT> &
+Buffer<N, allocator>::iterator_common<LIGHT>::operator=(iterator_common &other)
 {
 	if (TNT_UNLIKELY(this == &other))
 		return *this;
@@ -457,7 +475,7 @@ Buffer<N, allocator>::iterator_common<LIGHT>::operator= (iterator_common& other)
 
 template <size_t N, class allocator>
 template <bool LIGHT>
-typename Buffer<N, allocator>::template iterator_common<LIGHT>&
+typename Buffer<N, allocator>::template iterator_common<LIGHT> &
 Buffer<N, allocator>::iterator_common<LIGHT>::operator++()
 {
 	moveForward(1);
@@ -467,7 +485,7 @@ Buffer<N, allocator>::iterator_common<LIGHT>::operator++()
 
 template <size_t N, class allocator>
 template <bool LIGHT>
-typename Buffer<N, allocator>::template iterator_common<LIGHT>&
+typename Buffer<N, allocator>::template iterator_common<LIGHT> &
 Buffer<N, allocator>::iterator_common<LIGHT>::operator+=(size_t step)
 {
 	moveForward(step);
@@ -490,7 +508,8 @@ template <size_t N, class allocator>
 template <bool LIGHT>
 template <bool OTHER_LIGHT>
 bool
-Buffer<N, allocator>::iterator_common<LIGHT>::operator==(const iterator_common<OTHER_LIGHT>& a) const
+Buffer<N, allocator>::iterator_common<LIGHT>::operator==(
+	const iterator_common<OTHER_LIGHT> &a) const
 {
 	return m_position == a.m_position;
 }
@@ -499,7 +518,8 @@ template <size_t N, class allocator>
 template <bool LIGHT>
 template <bool OTHER_LIGHT>
 bool
-Buffer<N, allocator>::iterator_common<LIGHT>::operator!=(const iterator_common<OTHER_LIGHT>& a) const
+Buffer<N, allocator>::iterator_common<LIGHT>::operator!=(
+	const iterator_common<OTHER_LIGHT> &a) const
 {
 	return m_position != a.m_position;
 }
@@ -508,7 +528,8 @@ template <size_t N, class allocator>
 template <bool LIGHT>
 template <bool OTHER_LIGHT>
 bool
-Buffer<N, allocator>::iterator_common<LIGHT>::operator<(const iterator_common<OTHER_LIGHT>& a) const
+Buffer<N, allocator>::iterator_common<LIGHT>::operator<(
+	const iterator_common<OTHER_LIGHT> &a) const
 {
 	uintptr_t this_addr = (uintptr_t)m_position;
 	uintptr_t that_addr = (uintptr_t)a.m_position;
@@ -522,20 +543,22 @@ template <size_t N, class allocator>
 template <bool LIGHT>
 template <bool OTHER_LIGHT>
 size_t
-Buffer<N, allocator>::iterator_common<LIGHT>::operator-(const iterator_common<OTHER_LIGHT>& a) const
+Buffer<N, allocator>::iterator_common<LIGHT>::operator-(
+	const iterator_common<OTHER_LIGHT> &a) const
 {
 	size_t res = (getBlock()->id - a.getBlock()->id) * Block::DATA_SIZE;
-	res += (uintptr_t) m_position % N;
-	res -= (uintptr_t) a.m_position % N;
+	res += (uintptr_t)m_position % N;
+	res -= (uintptr_t)a.m_position % N;
 	return res;
 }
 
 template <size_t N, class allocator>
 template <bool LIGHT>
 bool
-Buffer<N, allocator>::iterator_common<LIGHT>::has_contiguous(const size_t size) const
+Buffer<N, allocator>::iterator_common<LIGHT>::has_contiguous(
+	const size_t size) const
 {
-	return size <= N - (uintptr_t) m_position % N;
+	return size <= N - (uintptr_t)m_position % N;
 }
 
 template <size_t N, class allocator>
@@ -558,12 +581,11 @@ template <bool LIGHT>
 void
 Buffer<N, allocator>::iterator_common<LIGHT>::moveForward(size_t step)
 {
-	TNT_INV((uintptr_t) m_position % N >= Block::DATA_OFFSET);
-	while (TNT_UNLIKELY(step >= N - ((uintptr_t )m_position % N)))
-	{
-		step -= N - ((uintptr_t )m_position % N);
+	TNT_INV((uintptr_t)m_position % N >= Block::DATA_OFFSET);
+	while (TNT_UNLIKELY(step >= N - ((uintptr_t)m_position % N))) {
+		step -= N - ((uintptr_t)m_position % N);
 		m_position = getBlock()->next().data;
-		TNT_INV((uintptr_t) m_position % N >= Block::DATA_OFFSET);
+		TNT_INV((uintptr_t)m_position % N >= Block::DATA_OFFSET);
 	}
 	m_position += step;
 }
@@ -573,11 +595,12 @@ template <bool LIGHT>
 void
 Buffer<N, allocator>::iterator_common<LIGHT>::moveBackward(size_t step)
 {
-	TNT_INV((uintptr_t) m_position % N >= Block::DATA_OFFSET);
-	while (TNT_UNLIKELY(step > (uintptr_t) m_position % N - Block::DATA_OFFSET)) {
-		step -= (uintptr_t) m_position % N - Block::DATA_OFFSET + 1;
+	TNT_INV((uintptr_t)m_position % N >= Block::DATA_OFFSET);
+	while (TNT_UNLIKELY(step >
+			    (uintptr_t)m_position % N - Block::DATA_OFFSET)) {
+		step -= (uintptr_t)m_position % N - Block::DATA_OFFSET + 1;
 		m_position = getBlock()->prev().data + (Block::DATA_SIZE - 1);
-		TNT_INV((uintptr_t) m_position % N >= Block::DATA_OFFSET);
+		TNT_INV((uintptr_t)m_position % N >= Block::DATA_OFFSET);
 	}
 	m_position -= step;
 }
@@ -590,7 +613,7 @@ Buffer<N, allocator>::Buffer(const allocator &all) : m_all(all)
 		      "Allocation size must be multiple of 16 bytes");
 	static_assert(sizeof(Block) == allocator::REAL_SIZE,
 		      "size of buffer block is expected to match with "
-			      "allocation size");
+		      "allocation size");
 	static_assert(Block::DATA_OFFSET + Block::DATA_SIZE == N,
 		      "DATA_OFFSET must be offset of data");
 
@@ -672,10 +695,10 @@ Buffer<N, allocator>::addBack(wrap::Advance advance)
 template <size_t N, class allocator>
 template <class T>
 void
-Buffer<N, allocator>::addBack(const T& t)
+Buffer<N, allocator>::addBack(const T &t)
 {
 	static_assert(sizeof(T) <= Block::DATA_SIZE,
-		"Please use wrap::Data data for big objects");
+		      "Please use wrap::Data data for big objects");
 	if constexpr (sizeof(T) == 1) {
 		memcpy(m_end, &t, sizeof(T));
 		++m_end;
@@ -706,8 +729,7 @@ Buffer<N, allocator>::addBack(const T& t)
 
 template <size_t N, class allocator>
 template <char... C>
-void
-Buffer<N, allocator>::addBack(CStr<C...>)
+void Buffer<N, allocator>::addBack(CStr<C...>)
 {
 	if constexpr (CStr<C...>::size == 0) {
 	} else if constexpr (CStr<C...>::size == 1) {
@@ -723,7 +745,8 @@ Buffer<N, allocator>::addBack(CStr<C...>)
 			memcpy(m_end, CStr<C...>::data, CStr<C...>::rnd_size);
 			m_end += CStr<C...>::size;
 		} else {
-			addBack(wrap::Data{CStr<C...>::data, CStr<C...>::size});
+			addBack(wrap::Data { CStr<C...>::data,
+					     CStr<C...>::size });
 		}
 	}
 }
@@ -785,7 +808,7 @@ Buffer<N, allocator>::dropFront(size_t size)
 		 * Make sure block to be dropped does not have pointing to it
 		 * iterators.
 		 */
-		if (! m_iterators.empty()) {
+		if (!m_iterators.empty()) {
 			assert(m_iterators.first().getBlock() != block);
 		}
 #endif
@@ -833,16 +856,15 @@ Buffer<N, allocator>::EndGuard::~EndGuard() noexcept
 		m_buffer.setEnd(m_end);
 }
 
-
 template <size_t N, class allocator>
 void
 Buffer<N, allocator>::insert(const iterator &itr, size_t size)
 {
-	//TODO: rewrite without iterators.
+	// TODO: rewrite without iterators.
 	/* Remember last block before extending the buffer. */
 	Block *src_block = &m_blocks.last();
 	char *src_block_end = m_end;
-	addBack(wrap::Advance{size});
+	addBack(wrap::Advance { size });
 	Block *dst_block = &m_blocks.last();
 	char *src = nullptr;
 	char *dst = nullptr;
@@ -851,7 +873,8 @@ Buffer<N, allocator>::insert(const iterator &itr, size_t size)
 	 * iterator's position.
 	 * TODO: remove this awful define (but it least it works).
 	 */
-#define src_block_begin ((src_block == itr.getBlock()) ? itr.m_position : src_block->begin())
+#define src_block_begin                                                        \
+	((src_block == itr.getBlock()) ? itr.m_position : src_block->begin())
 	/* Firstly move data in blocks. */
 	size_t left_in_dst_block = m_end - dst_block->begin();
 	size_t left_in_src_block = src_block_end - src_block_begin;
@@ -870,7 +893,8 @@ Buffer<N, allocator>::insert(const iterator &itr, size_t size)
 		 * which get in different blocks. So let's use two-step
 		 * memcpy of data in source block.
 		 */
-		assert(dst_block->id > itr.getBlock()->id || dst >= itr.m_position);
+		assert(dst_block->id > itr.getBlock()->id ||
+		       dst >= itr.m_position);
 		std::memmove(dst, src, copy_chunk_sz);
 		if (left_in_dst_block > left_in_src_block) {
 			left_in_dst_block -= copy_chunk_sz;
@@ -895,8 +919,8 @@ Buffer<N, allocator>::insert(const iterator &itr, size_t size)
 	assert(src_block == itr.getBlock());
 	assert(itr.m_position >= src);
 	/* Select all iterators from end until the same position. */
-	for (iterator *tmp = &m_iterators.last();
-	     *tmp != itr; tmp = &tmp->prev())
+	for (iterator *tmp = &m_iterators.last(); *tmp != itr;
+	     tmp = &tmp->prev())
 		tmp->moveForward(size);
 }
 
@@ -904,7 +928,7 @@ template <size_t N, class allocator>
 void
 Buffer<N, allocator>::release(const iterator &itr, size_t size)
 {
-	//TODO: rewrite without iterators.
+	// TODO: rewrite without iterators.
 	Block *src_block = itr.getBlock();
 	Block *dst_block = itr.getBlock();
 	char *src = itr.m_position;
@@ -952,8 +976,8 @@ Buffer<N, allocator>::release(const iterator &itr, size_t size)
 
 	/* Now adjust iterators' positions. */
 	/* Select all iterators from end until the same position. */
-	for (iterator *tmp = &m_iterators.last();
-	     *tmp != itr; tmp = &tmp->prev())
+	for (iterator *tmp = &m_iterators.last(); *tmp != itr;
+	     tmp = &tmp->prev())
 		tmp->moveBackward(size);
 
 	/* Finally drop unused chunk. */
@@ -997,10 +1021,10 @@ Buffer<N, allocator>::getIOV(const iterator_common<LIGHT1> &start,
 		++vec_cnt;
 		vec->iov_base = pos;
 		if (block == last_block) {
-			vec->iov_len = (size_t) (end.m_position - pos);
+			vec->iov_len = (size_t)(end.m_position - pos);
 			break;
 		}
-		vec->iov_len = (size_t) (block->end() - pos);
+		vec->iov_len = (size_t)(block->end() - pos);
 		block = &block->next();
 		pos = block->begin();
 	}
@@ -1010,12 +1034,12 @@ Buffer<N, allocator>::getIOV(const iterator_common<LIGHT1> &start,
 template <size_t N, class allocator>
 template <bool LIGHT>
 void
-Buffer<N, allocator>::set(const iterator_common<LIGHT> &itr,
-			  const char *buf, size_t size)
+Buffer<N, allocator>::set(const iterator_common<LIGHT> &itr, const char *buf,
+			  size_t size)
 {
 	assert(size > 0);
 	char *pos = itr.m_position;
-	size_t left_in_block = N - (uintptr_t) pos % N;
+	size_t left_in_block = N - (uintptr_t)pos % N;
 	while (TNT_UNLIKELY(size > left_in_block)) {
 		std::memcpy(pos, buf, left_in_block);
 		size -= left_in_block;
@@ -1029,7 +1053,7 @@ Buffer<N, allocator>::set(const iterator_common<LIGHT> &itr,
 template <size_t N, class allocator>
 template <class T, bool LIGHT>
 void
-Buffer<N, allocator>::set(const iterator_common<LIGHT> &itr, T&& t)
+Buffer<N, allocator>::set(const iterator_common<LIGHT> &itr, T &&t)
 {
 	/*
 	 * Do not even attempt at copying non-standard classes (such as
@@ -1047,8 +1071,8 @@ Buffer<N, allocator>::set(const iterator_common<LIGHT> &itr, T&& t)
 template <size_t N, class allocator>
 template <bool LIGHT>
 void
-Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr,
-			  char *buf, size_t size)
+Buffer<N, allocator>::get(const iterator_common<LIGHT> &itr, char *buf,
+			  size_t size)
 {
 	assert(size > 0);
 	/*
@@ -1056,7 +1080,7 @@ Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr,
 	 * buffer and data sources are swapped.
 	 */
 	char *pos = itr.m_position;
-	size_t left_in_block = N - (uintptr_t) pos % N;
+	size_t left_in_block = N - (uintptr_t)pos % N;
 	while (TNT_UNLIKELY(size > left_in_block)) {
 		memcpy(buf, pos, left_in_block);
 		size -= left_in_block;
@@ -1070,7 +1094,7 @@ Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr,
 template <size_t N, class allocator>
 template <class T, bool LIGHT>
 void
-Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr, T& t)
+Buffer<N, allocator>::get(const iterator_common<LIGHT> &itr, T &t)
 {
 	static_assert(std::is_standard_layout_v<std::remove_reference_t<T>>,
 		      "T is expected to have standard layout");
@@ -1084,7 +1108,7 @@ Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr, T& t)
 template <size_t N, class allocator>
 template <class T, bool LIGHT>
 T
-Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr)
+Buffer<N, allocator>::get(const iterator_common<LIGHT> &itr)
 {
 	static_assert(std::is_standard_layout_v<std::remove_reference_t<T>>,
 		      "T is expected to have standard layout");
@@ -1096,14 +1120,14 @@ Buffer<N, allocator>::get(const iterator_common<LIGHT>& itr)
 template <size_t N, class allocator>
 template <bool LIGHT>
 void
-Buffer<N, allocator>::read(iterator_common<LIGHT>& itr, char *buf, size_t size)
+Buffer<N, allocator>::read(iterator_common<LIGHT> &itr, char *buf, size_t size)
 {
 	assert(size > 0);
 	/*
 	 * The same implementation as in ::set() method buf vice versa:
 	 * buffer and data sources are swapped.
 	 */
-	size_t left_in_block = N - (uintptr_t) itr.m_position % N;
+	size_t left_in_block = N - (uintptr_t)itr.m_position % N;
 	while (TNT_UNLIKELY(size >= left_in_block)) {
 		memcpy(buf, itr.m_position, left_in_block);
 		size -= left_in_block;
@@ -1119,7 +1143,7 @@ Buffer<N, allocator>::read(iterator_common<LIGHT>& itr, char *buf, size_t size)
 template <size_t N, class allocator>
 template <class T, bool LIGHT>
 void
-Buffer<N, allocator>::read(iterator_common<LIGHT>& itr, T& t)
+Buffer<N, allocator>::read(iterator_common<LIGHT> &itr, T &t)
 {
 	static_assert(std::is_standard_layout_v<std::remove_reference_t<T>>,
 		      "T is expected to have standard layout");
@@ -1136,7 +1160,7 @@ Buffer<N, allocator>::read(iterator_common<LIGHT>& itr, T& t)
 template <size_t N, class allocator>
 template <class T, bool LIGHT>
 T
-Buffer<N, allocator>::read(iterator_common<LIGHT>& itr)
+Buffer<N, allocator>::read(iterator_common<LIGHT> &itr)
 {
 	static_assert(std::is_standard_layout_v<std::remove_reference_t<T>>,
 		      "T is expected to have standard layout");
@@ -1148,10 +1172,10 @@ Buffer<N, allocator>::read(iterator_common<LIGHT>& itr)
 template <size_t N, class allocator>
 template <bool LIGHT>
 bool
-Buffer<N, allocator>::has(const iterator_common<LIGHT>& itr, size_t size)
+Buffer<N, allocator>::has(const iterator_common<LIGHT> &itr, size_t size)
 {
 	const char *pos = itr.m_position;
-	uintptr_t itr_addr = (uintptr_t) pos;
+	uintptr_t itr_addr = (uintptr_t)pos;
 	const char *block_end = (const char *)((itr_addr | (N - 1)) + 1);
 	const char *bound = isSameBlock(pos, m_end) ? m_end : block_end;
 	if (TNT_LIKELY(pos + size <= bound))
@@ -1160,12 +1184,13 @@ Buffer<N, allocator>::has(const iterator_common<LIGHT>& itr, size_t size)
 		return size <= end<true>() - itr;
 }
 
-template<size_t N, class allocator>
+template <size_t N, class allocator>
 void
 Buffer<N, allocator>::flush()
 {
-	size_t distance = m_iterators.isEmpty() ?
-		end<true>() - begin<true>() : m_iterators.first() - begin<true>();
+	size_t distance = m_iterators.isEmpty()
+		? end<true>() - begin<true>()
+		: m_iterators.first() - begin<true>();
 	if (distance > 0)
 		dropFront(distance);
 }
@@ -1177,7 +1202,7 @@ Buffer<N, allocator>::debugSelfCheck() const
 	int res = 0;
 	bool first = true;
 	size_t prevId;
-	for (const Block& block : m_blocks) {
+	for (const Block &block : m_blocks) {
 		if (first)
 			first = false;
 		else if (block.id != prevId + 1)
@@ -1185,8 +1210,8 @@ Buffer<N, allocator>::debugSelfCheck() const
 		prevId = block.id;
 	}
 
-	for (const iterator& itr : m_iterators) {
-		if ((uintptr_t) itr.m_position % N < Block::DATA_OFFSET)
+	for (const iterator &itr : m_iterators) {
+		if ((uintptr_t)itr.m_position % N < Block::DATA_OFFSET)
 			res |= 4;
 	}
 	return res;
@@ -1203,10 +1228,12 @@ dump(Buffer<N, allocator> &buffer)
 	struct iovec vec[IOVEC_MAX];
 	std::string output;
 	for (auto itr = buffer.begin(); itr != buffer.end(); itr += vec_len) {
-		size_t vec_cnt = buffer.getIOV(itr, (struct iovec*)&vec, IOVEC_MAX);
+		size_t vec_cnt =
+			buffer.getIOV(itr, (struct iovec *)&vec, IOVEC_MAX);
 		for (size_t i = 0; i < vec_cnt; ++i) {
-			output.append("|sz=" + std::to_string(vec[i].iov_len) + "|");
-			output.append((const char *) vec[i].iov_base,
+			output.append("|sz=" + std::to_string(vec[i].iov_len) +
+				      "|");
+			output.append((const char *)vec[i].iov_base,
 				      vec[i].iov_len);
 			output.append("|");
 			vec_len += vec[i].iov_len;

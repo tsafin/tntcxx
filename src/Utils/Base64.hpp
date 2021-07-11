@@ -57,10 +57,10 @@
 #endif
 
 #ifdef BASE64_COMPLILER_HAS_BUILTIN_EXPECT
-#define BASE64_LIKELY(x)   __builtin_expect(!!(x), 1)
+#define BASE64_LIKELY(x) __builtin_expect(!!(x), 1)
 #define BASE64_UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
-#define BASE64_LIKELY(x)   (x)
+#define BASE64_LIKELY(x) (x)
 #define BASE64_UNLIKELY(x) (x)
 #endif // #idfef BASE64_COMPLILER_HAS_BUILTIN_EXPECT
 
@@ -72,19 +72,20 @@ enum {
 };
 
 template <class INP, class OUT>
-std::pair<INP, OUT> encode(INP first, INP last, OUT dest, int options = 0)
+std::pair<INP, OUT>
+encode(INP first, INP last, OUT dest, int options = 0)
 {
-	const char *alphabets[2] = {
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-	};
+	const char *alphabets[2] = { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmno"
+				     "pqrstuvwxyz0123456789+/",
+				     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmno"
+				     "pqrstuvwxyz0123456789-_" };
 	const char padding = '=';
 	const char *alphabet = alphabets[(options & URL) ? 1 : 0];
 	assert(alphabet[63] != 0 && alphabet[64] == 0);
 
 	while (true) {
 		if (BASE64_UNLIKELY(first == last))
-			return {first, dest};
+			return { first, dest };
 
 		uint32_t part = static_cast<uint8_t>(*first++); // Have 8 bits.
 		*dest++ = alphabet[part >> 2]; // Use high 6 bits.
@@ -94,7 +95,7 @@ std::pair<INP, OUT> encode(INP first, INP last, OUT dest, int options = 0)
 			*dest++ = alphabet[part << 4]; // Use saved low 2 bits.
 			*dest++ = padding;
 			*dest++ = padding;
-			return {first, dest};
+			return { first, dest };
 		}
 
 		part = (part << 8) | static_cast<uint8_t>(*first++); // Have 10.
@@ -104,7 +105,7 @@ std::pair<INP, OUT> encode(INP first, INP last, OUT dest, int options = 0)
 		if (BASE64_UNLIKELY(first == last)) {
 			*dest++ = alphabet[part << 2]; // Use saved low 4 bits.
 			*dest++ = padding;
-			return {first, dest};
+			return { first, dest };
 		}
 
 		part = (part << 8) | static_cast<uint8_t>(*first++); // Have 12.
@@ -114,45 +115,61 @@ std::pair<INP, OUT> encode(INP first, INP last, OUT dest, int options = 0)
 }
 
 template <class INP, class OUT>
-std::pair<INP, OUT> decode(INP first, INP last, OUT dest)
+std::pair<INP, OUT>
+decode(INP first, INP last, OUT dest)
 {
 	// Map to decode back from alphabet to 6bit integer (0..63).
 	// Has -1 for wrong characters and 64 for padding ('=') character.
-	const char *decmap =
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\076\377\076\377\077"
-		"\064\065\066\067\070\071\072\073\074\075\377\377\377\100\377\377"
-		"\377\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016"
-		"\017\020\021\022\023\024\025\026\027\030\031\377\377\377\377\077"
-		"\377\032\033\034\035\036\037\040\041\042\043\044\045\046\047\050"
-		"\051\052\053\054\055\056\057\060\061\062\063\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-		"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377";
-	
+	const char *decmap = "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\076"
+			     "\377\076\377\077"
+			     "\064\065\066\067\070\071\072\073\074\075\377\377"
+			     "\377\100\377\377"
+			     "\377\000\001\002\003\004\005\006\007\010\011\012"
+			     "\013\014\015\016"
+			     "\017\020\021\022\023\024\025\026\027\030\031\377"
+			     "\377\377\377\077"
+			     "\377\032\033\034\035\036\037\040\041\042\043\044"
+			     "\045\046\047\050"
+			     "\051\052\053\054\055\056\057\060\061\062\063\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377"
+			     "\377\377\377\377\377\377\377\377\377\377\377\377"
+			     "\377\377\377\377";
+
 	while (true) {
 		if (BASE64_UNLIKELY(first == last))
-			return {first, dest};
+			return { first, dest };
 
 		uint8_t c = decmap[static_cast<uint8_t>(*first)];
 		if (BASE64_UNLIKELY(c >= 64)) // Bad char or '=' here is error.
-			return {first, dest};
+			return { first, dest };
 		uint32_t part = c; // 6 bits.
 
 		auto next = first;
 		++next;
 		if (BASE64_UNLIKELY(next == last)) // Unexpected end.
-			return {first, dest};
+			return { first, dest };
 
 		c = decmap[static_cast<uint8_t>(*next)];
 		if (BASE64_UNLIKELY(c >= 64)) // Bad char or '=' here is error.
-			return {first, dest};
+			return { first, dest };
 
 		part = (part << 6) | c; // 12 useful bits.
 		*dest++ = static_cast<char>(part >> 4); // 1st char is accepted.
@@ -164,26 +181,26 @@ std::pair<INP, OUT> decode(INP first, INP last, OUT dest)
 			// Now end of stream is allowed.
 			if (BASE64_UNLIKELY((part & 0xf) != 0))
 				// Incorrect (non-zero) remainder.
-				return {first, dest};
+				return { first, dest };
 
-			return {next, dest};
+			return { next, dest };
 		}
 
 		c = decmap[static_cast<uint8_t>(*next)];
 		if (BASE64_UNLIKELY(c >= 64)) {
 			if (BASE64_UNLIKELY((part & 0xf) != 0))
 				// Incorrect (non-zero) remainder.
-				return {first, dest};
+				return { first, dest };
 
 			if (BASE64_UNLIKELY(c > 64)) // Wrong character, leave.
-				return {next, dest};
+				return { next, dest };
 
 			++next; // '=' character, take it.
 			// If the next character is '=' we should also take it.
 			if (BASE64_LIKELY(next != last && *next == '='))
 				++next;
 
-			return {next, dest};
+			return { next, dest };
 		}
 
 		part = (part << 6) | c; // 10 usefult bits (and garbage above).
@@ -196,22 +213,22 @@ std::pair<INP, OUT> decode(INP first, INP last, OUT dest)
 			// Now end of stream is allowed.
 			if (BASE64_UNLIKELY((part & 0x3) != 0))
 				// Incorrect (non-zero) remainder.
-				return {first, dest};
+				return { first, dest };
 
-			return {next, dest};
+			return { next, dest };
 		}
 
 		c = decmap[static_cast<uint8_t>(*next)];
 		if (BASE64_UNLIKELY(c >= 64)) {
 			if (BASE64_UNLIKELY((part & 0x3) != 0))
 				// Incorrect (non-zero) remainder.
-				return {first, dest};
+				return { first, dest };
 
 			if (BASE64_UNLIKELY(c > 64)) // Wrong character, leave.
-				return {next, dest};
+				return { next, dest };
 
 			++next; // '=' character, take it.
-			return {next, dest};
+			return { next, dest };
 		}
 
 		part = (part << 6) | c; // 8 usefult bits (and garbage above).
@@ -224,7 +241,8 @@ std::pair<INP, OUT> decode(INP first, INP last, OUT dest)
 /**
  * Calculate exact buffer size required for encoding @a src_size bytes of data.
  */
-inline size_t enc_size(size_t src_size)
+inline size_t
+enc_size(size_t src_size)
 {
 	return (src_size + 2) / 3 * 4;
 }
@@ -233,7 +251,8 @@ inline size_t enc_size(size_t src_size)
  * Calculate buffer size required for decoding @a src_size bytes of data.
  * Actual size can be less by 1 or 2 because of base64 padding.
  */
-inline size_t dec_size(size_t src_size)
+inline size_t
+dec_size(size_t src_size)
 {
 	return src_size * 3 / 4;
 }

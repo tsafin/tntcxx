@@ -48,14 +48,20 @@ struct CStr {
 	static constexpr size_t rnd_size = size ? (size - 1) / 8 * 8 + 8 : 0;
 	/** The string itself, null-terminated,
 	 *  extended with zeros to have at least rnd_size bytes. */
-	static constexpr char data[rnd_size + 1] = {C...};
+	static constexpr char data[rnd_size + 1] = { C... };
 
 	/** Concatenate the string with another. */
 	template <char... D>
-	static constexpr CStr<C..., D...> join(CStr<D...>) { return {}; }
+	static constexpr CStr<C..., D...> join(CStr<D...>)
+	{
+		return {};
+	}
 	/** Get substring that consists of charactars with give indexes. */
 	template <size_t... I>
-	static constexpr CStr<data[I]...> subs(std::index_sequence<I...>) { return {}; }
+	static constexpr CStr<data[I]...> subs(std::index_sequence<I...>)
+	{
+		return {};
+	}
 	/** There's no sense in referencing the object. */
 	constexpr std::nullptr_t operator&() = delete;
 };
@@ -76,14 +82,22 @@ struct MppMacroIndexes {
 	using IndSeq_t = std::make_index_sequence<S>;
 };
 #define TNT_CON_STR_HLP0(S, N) S[(N) % sizeof(S)]
-#define TNT_CON_STR_HLP1(S, N) TNT_CON_STR_HLP0(S, N), TNT_CON_STR_HLP0(S, N+ 1)
-#define TNT_CON_STR_HLP2(S, N) TNT_CON_STR_HLP1(S, N), TNT_CON_STR_HLP1(S, N+ 2)
-#define TNT_CON_STR_HLP3(S, N) TNT_CON_STR_HLP2(S, N), TNT_CON_STR_HLP2(S, N+ 4)
-#define TNT_CON_STR_HLP4(S, N) TNT_CON_STR_HLP3(S, N), TNT_CON_STR_HLP3(S, N+ 8)
-#define TNT_CON_STR_HLP5(S, N) TNT_CON_STR_HLP4(S, N), TNT_CON_STR_HLP4(S, N+16)
-#define TNT_CON_STR_HLP6(S, N) TNT_CON_STR_HLP5(S, N), TNT_CON_STR_HLP5(S, N+32)
-#define TNT_CON_STR_IS(S) tnt::MppMacroIndexes<std::size(S) - 1>::IndSeq_t{}
-#define TNT_CON_STR(S) tnt::CStr<TNT_CON_STR_HLP6(S, 0)>::subs(TNT_CON_STR_IS(S))
+#define TNT_CON_STR_HLP1(S, N)                                                 \
+	TNT_CON_STR_HLP0(S, N), TNT_CON_STR_HLP0(S, N + 1)
+#define TNT_CON_STR_HLP2(S, N)                                                 \
+	TNT_CON_STR_HLP1(S, N), TNT_CON_STR_HLP1(S, N + 2)
+#define TNT_CON_STR_HLP3(S, N)                                                 \
+	TNT_CON_STR_HLP2(S, N), TNT_CON_STR_HLP2(S, N + 4)
+#define TNT_CON_STR_HLP4(S, N)                                                 \
+	TNT_CON_STR_HLP3(S, N), TNT_CON_STR_HLP3(S, N + 8)
+#define TNT_CON_STR_HLP5(S, N)                                                 \
+	TNT_CON_STR_HLP4(S, N), TNT_CON_STR_HLP4(S, N + 16)
+#define TNT_CON_STR_HLP6(S, N)                                                 \
+	TNT_CON_STR_HLP5(S, N), TNT_CON_STR_HLP5(S, N + 32)
+#define TNT_CON_STR_IS(S)                                                      \
+	tnt::MppMacroIndexes<std::size(S) - 1>::IndSeq_t {}
+#define TNT_CON_STR(S)                                                         \
+	tnt::CStr<TNT_CON_STR_HLP6(S, 0)>::subs(TNT_CON_STR_IS(S))
 #endif // #ifndef TNT_DISABLE_STR_MACRO
 
 /**
@@ -104,11 +118,12 @@ struct MppMacroIndexes {
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 namespace literal {
-template <class T, T... C>
-constexpr CStr<C...> operator""_cs() {
-	static_assert(std::is_same_v<char, T>, "Char type only");
-	return { };
-}
+	template <class T, T... C>
+	constexpr CStr<C...> operator""_cs()
+	{
+		static_assert(std::is_same_v<char, T>, "Char type only");
+		return {};
+	}
 } // namespace literal {
 #ifdef __clang__
 #pragma clang diagnostic pop

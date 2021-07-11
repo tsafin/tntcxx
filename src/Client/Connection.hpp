@@ -33,18 +33,18 @@
 #include "RequestEncoder.hpp"
 #include "ResponseDecoder.hpp"
 
-#include "../Utils/rlist.h"
 #include "../Utils/Logger.hpp"
 #include "../Utils/Wrappers.hpp"
+#include "../Utils/rlist.h"
 
 #include <sys/uio.h>
 
-#include <any>
 #include <algorithm>
+#include <any>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <set>
 
 /** Statistics concerning requests/responses. */
 struct ConnectionStat {
@@ -70,8 +70,9 @@ template <class BUFFER, class NetProvider>
 class Connector;
 
 /** Each connection is supposed to be bound to a single socket. */
-template<class BUFFER, class NetProvider>
-class Connection {
+template <class BUFFER, class NetProvider>
+class Connection
+{
 public:
 	using iterator = typename BUFFER::iterator;
 
@@ -80,11 +81,12 @@ public:
 	 * like box.space[space_id].replace() and
 	 * box.space[sid].index[iid].select()
 	 */
-	class Space {
+	class Space
+	{
 	public:
-		Space(Connection<BUFFER, NetProvider> &conn) :
-			index(conn, *this), m_Conn(conn) {};
-		Space& operator[] (uint32_t id)
+		Space(Connection<BUFFER, NetProvider> &conn)
+			: index(conn, *this), m_Conn(conn) {};
+		Space &operator[](uint32_t id)
 		{
 			space_id = id;
 			return *this;
@@ -105,28 +107,32 @@ public:
 			return m_Conn.delete_(key, space_id, index_id);
 		}
 		template <class K, class T>
-		rid_t update(const K &key, const T &tuple, uint32_t index_id = 0)
+		rid_t update(const K &key, const T &tuple,
+			     uint32_t index_id = 0)
 		{
 			return m_Conn.update(key, tuple, space_id, index_id);
 		}
 		template <class T, class O>
-		rid_t upsert(const T &tuple, const O &ops, uint32_t index_base = 0)
+		rid_t upsert(const T &tuple, const O &ops,
+			     uint32_t index_base = 0)
 		{
 			return m_Conn.upsert(tuple, ops, space_id, index_base);
 		}
 		template <class T>
-		rid_t select(const T& key, uint32_t index_id = 0,
-			     uint32_t limit = UINT32_MAX,
-			     uint32_t offset = 0, IteratorType iterator = EQ)
+		rid_t select(const T &key, uint32_t index_id = 0,
+			     uint32_t limit = UINT32_MAX, uint32_t offset = 0,
+			     IteratorType iterator = EQ)
 		{
 			return m_Conn.select(key, space_id, index_id, limit,
 					     offset, iterator);
 		}
-		class Index {
+		class Index
+		{
 		public:
-			Index(Connection<BUFFER, NetProvider> &conn, Space &space) :
-				m_Conn(conn), m_Space(space) {};
-			Index& operator[] (uint32_t id)
+			Index(Connection<BUFFER, NetProvider> &conn,
+			      Space &space)
+				: m_Conn(conn), m_Space(space) {};
+			Index &operator[](uint32_t id)
 			{
 				index_id = id;
 				return *this;
@@ -140,24 +146,25 @@ public:
 			template <class K, class T>
 			rid_t update(const K &key, const T &tuple)
 			{
-				return m_Conn.update(key, tuple,
-						     m_Space.space_id, index_id);
+				return m_Conn.update(
+					key, tuple, m_Space.space_id, index_id);
 			}
 			template <class T>
-			rid_t select(const T &key,
-				     uint32_t limit = UINT32_MAX,
+			rid_t select(const T &key, uint32_t limit = UINT32_MAX,
 				     uint32_t offset = 0,
 				     IteratorType iterator = EQ)
 			{
 				return m_Conn.select(key, m_Space.space_id,
-						     index_id, limit,
-						     offset, iterator);
+						     index_id, limit, offset,
+						     iterator);
 			}
+
 		private:
 			Connection<BUFFER, NetProvider> &m_Conn;
 			Space &m_Space;
 			uint32_t index_id;
 		} index;
+
 	private:
 		Connection<BUFFER, NetProvider> &m_Conn;
 		uint32_t space_id;
@@ -165,8 +172,8 @@ public:
 
 	Connection(Connector<BUFFER, NetProvider> &connector);
 	~Connection();
-	Connection(const Connection& connection) = delete;
-	Connection& operator = (const Connection& connection) = delete;
+	Connection(const Connection &connection) = delete;
+	Connection &operator=(const Connection &connection) = delete;
 
 	std::optional<Response<BUFFER>> getResponse(rid_t future);
 	bool futureIsReady(rid_t future);
@@ -176,46 +183,39 @@ public:
 	rid_t ping();
 
 	void setError(const std::string &msg);
-	std::string& getError();
+	std::string &getError();
 	void reset();
 
-	BUFFER& getInBuf();
+	BUFFER &getInBuf();
 
 #ifndef NDEBUG
 	std::string toString();
 #endif
-	template<class B, class N>
-	friend
-	struct iovec * outBufferToIOV(Connection<B, N> &conn, size_t *iov_len);
+	template <class B, class N>
+	friend struct iovec *outBufferToIOV(Connection<B, N> &conn,
+					    size_t *iov_len);
 
-	template<class B, class N>
-	friend
-	struct iovec * inBufferToIOV(Connection<B, N> &conn, size_t size,
-				     size_t *iov_len);
+	template <class B, class N>
+	friend struct iovec *inBufferToIOV(Connection<B, N> &conn, size_t size,
+					   size_t *iov_len);
 
-	template<class B, class N>
-	friend
-	void hasSentBytes(Connection<B, N> &conn, size_t bytes);
+	template <class B, class N>
+	friend void hasSentBytes(Connection<B, N> &conn, size_t bytes);
 
-	template<class B, class N>
-	friend
-	void hasNotRecvBytes(Connection<B, N> &conn, size_t bytes);
+	template <class B, class N>
+	friend void hasNotRecvBytes(Connection<B, N> &conn, size_t bytes);
 
-	template<class B, class N>
-	friend
-	bool hasDataToSend(Connection<B, N> &conn);
+	template <class B, class N>
+	friend bool hasDataToSend(Connection<B, N> &conn);
 
-	template<class B, class N>
-	friend
-	bool hasDataToDecode(Connection<B, N> &conn);
+	template <class B, class N>
+	friend bool hasDataToDecode(Connection<B, N> &conn);
 
-	template<class B, class N>
-	friend
-	enum DecodeStatus decodeResponse(Connection<B, N> &conn);
+	template <class B, class N>
+	friend enum DecodeStatus decodeResponse(Connection<B, N> &conn);
 
-	template<class B, class N>
-	friend
-	int decodeGreeting(Connection<B, N> &conn);
+	template <class B, class N>
+	friend int decodeGreeting(Connection<B, N> &conn);
 
 	int socket;
 	ConnectionStatus status;
@@ -226,6 +226,7 @@ public:
 	void readyToDecode();
 	static constexpr size_t AVAILABLE_IOVEC_COUNT = 32;
 	static constexpr size_t GC_STEP_CNT = 5;
+
 private:
 	Connector<BUFFER, NetProvider> &m_Connector;
 
@@ -258,19 +259,23 @@ private:
 	rid_t upsert(const T &tuple, const O &ops, uint32_t space_id,
 		     uint32_t index_base);
 	template <class T>
-	rid_t select(const T &key,
-		     uint32_t space_id, uint32_t index_id = 0,
-		     uint32_t limit = UINT32_MAX,
-		     uint32_t offset = 0, IteratorType iterator = EQ);
+	rid_t select(const T &key, uint32_t space_id, uint32_t index_id = 0,
+		     uint32_t limit = UINT32_MAX, uint32_t offset = 0,
+		     IteratorType iterator = EQ);
 };
 
-template<class BUFFER, class NetProvider>
-Connection<BUFFER, NetProvider>::Connection(Connector<BUFFER, NetProvider> &connector) :
-				   space(*this), socket(-1),
-				   m_Connector(connector), m_InBuf(), m_OutBuf(),
-				   m_Encoder(m_OutBuf), m_Decoder(m_InBuf),
-				   m_EndDecoded(m_InBuf.begin()),
-				   m_EndEncoded(m_OutBuf.begin())
+template <class BUFFER, class NetProvider>
+Connection<BUFFER, NetProvider>::Connection(
+	Connector<BUFFER, NetProvider> &connector)
+	: space(*this)
+	, socket(-1)
+	, m_Connector(connector)
+	, m_InBuf()
+	, m_OutBuf()
+	, m_Encoder(m_OutBuf)
+	, m_Decoder(m_InBuf)
+	, m_EndDecoded(m_InBuf.begin())
+	, m_EndEncoded(m_OutBuf.begin())
 {
 	LOG_DEBUG("Creating connection...");
 	memset(&status, 0, sizeof(status));
@@ -278,24 +283,26 @@ Connection<BUFFER, NetProvider>::Connection(Connector<BUFFER, NetProvider> &conn
 	rlist_create(&m_in_read);
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 Connection<BUFFER, NetProvider>::~Connection()
 {
 	if (socket >= 0) {
 		m_Connector.close(*this);
 		socket = -1;
 	}
-	if (! rlist_empty(&m_in_write)) {
+	if (!rlist_empty(&m_in_write)) {
 		rlist_del(&m_in_write);
-		LOG_WARNING("Connection ", this, " had unsent data in output buffer!");
+		LOG_WARNING("Connection ", this,
+			    " had unsent data in output buffer!");
 	}
-	if (! rlist_empty(&m_in_read)) {
+	if (!rlist_empty(&m_in_read)) {
 		rlist_del(&m_in_read);
-		LOG_WARNING("Connection ", this, " had unread data in input buffer!");
+		LOG_WARNING("Connection ", this,
+			    " had unread data in input buffer!");
 	}
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 std::optional<Response<BUFFER>>
 Connection<BUFFER, NetProvider>::getResponse(rid_t future)
 {
@@ -307,21 +314,21 @@ Connection<BUFFER, NetProvider>::getResponse(rid_t future)
 	return std::make_optional(std::move(response));
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 bool
 Connection<BUFFER, NetProvider>::futureIsReady(rid_t future)
 {
 	return m_Futures.find(future) != m_Futures.end();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
 Connection<BUFFER, NetProvider>::readyToDecode()
 {
 	m_Connector.readyToDecode(*this);
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 template <class T>
 rid_t
 Connection<BUFFER, NetProvider>::call(const std::string &func, const T &args)
@@ -331,7 +338,7 @@ Connection<BUFFER, NetProvider>::call(const std::string &func, const T &args)
 	return RequestEncoder<BUFFER>::getSync();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 rid_t
 Connection<BUFFER, NetProvider>::ping()
 {
@@ -340,7 +347,7 @@ Connection<BUFFER, NetProvider>::ping()
 	return RequestEncoder<BUFFER>::getSync();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 template <class T>
 rid_t
 Connection<BUFFER, NetProvider>::insert(const T &tuple, uint32_t space_id)
@@ -350,7 +357,7 @@ Connection<BUFFER, NetProvider>::insert(const T &tuple, uint32_t space_id)
 	return RequestEncoder<BUFFER>::getSync();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 template <class T>
 rid_t
 Connection<BUFFER, NetProvider>::replace(const T &tuple, uint32_t space_id)
@@ -360,7 +367,7 @@ Connection<BUFFER, NetProvider>::replace(const T &tuple, uint32_t space_id)
 	return RequestEncoder<BUFFER>::getSync();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 template <class T>
 rid_t
 Connection<BUFFER, NetProvider>::delete_(const T &key, uint32_t space_id,
@@ -371,7 +378,7 @@ Connection<BUFFER, NetProvider>::delete_(const T &key, uint32_t space_id,
 	return RequestEncoder<BUFFER>::getSync();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 template <class K, class T>
 rid_t
 Connection<BUFFER, NetProvider>::update(const K &key, const T &tuple,
@@ -382,18 +389,19 @@ Connection<BUFFER, NetProvider>::update(const K &key, const T &tuple,
 	return RequestEncoder<BUFFER>::getSync();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 template <class T, class O>
 rid_t
 Connection<BUFFER, NetProvider>::upsert(const T &tuple, const O &ops,
 					uint32_t space_id, uint32_t index_base)
 {
-	m_EndEncoded += m_Encoder.encodeUpsert(tuple, ops, space_id, index_base);
+	m_EndEncoded +=
+		m_Encoder.encodeUpsert(tuple, ops, space_id, index_base);
 	m_Connector.readyToSend(*this);
 	return RequestEncoder<BUFFER>::getSync();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 template <class T>
 rid_t
 Connection<BUFFER, NetProvider>::select(const T &key, uint32_t space_id,
@@ -406,7 +414,7 @@ Connection<BUFFER, NetProvider>::select(const T &key, uint32_t space_id,
 	return RequestEncoder<BUFFER>::getSync();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
 Connection<BUFFER, NetProvider>::setError(const std::string &msg)
 {
@@ -414,79 +422,83 @@ Connection<BUFFER, NetProvider>::setError(const std::string &msg)
 	status.is_failed = true;
 }
 
-template<class BUFFER, class NetProvider>
-std::string&
+template <class BUFFER, class NetProvider>
+std::string &
 Connection<BUFFER, NetProvider>::getError()
 {
 	return m_Error.msg;
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
 Connection<BUFFER, NetProvider>::reset()
 {
 	std::memset(&status, 0, sizeof(status));
 }
 
-template<class BUFFER, class NetProvider>
-BUFFER&
+template <class BUFFER, class NetProvider>
+BUFFER &
 Connection<BUFFER, NetProvider>::getInBuf()
 {
 	return m_InBuf;
 }
 
-
 #ifndef NDEBUG
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 std::string
 Connection<BUFFER, NetProvider>::toString()
 {
-	return "Socket " + std::to_string(socket) + ", OutBuf: " +
-		std::to_string(m_EndEncoded - m_OutBuf.begin()) + " bytes to send;" +
-		"InBuf: " + std::to_string(m_EndDecoded - m_InBuf.begin()) + " bytes to decode";
+	return "Socket " + std::to_string(socket) +
+		", OutBuf: " + std::to_string(m_EndEncoded - m_OutBuf.begin()) +
+		" bytes to send;" +
+		"InBuf: " + std::to_string(m_EndDecoded - m_InBuf.begin()) +
+		" bytes to decode";
 }
 #endif
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 struct iovec *
-inBufferToIOV(Connection<BUFFER, NetProvider> &conn, size_t size, size_t *iov_len)
+inBufferToIOV(Connection<BUFFER, NetProvider> &conn, size_t size,
+	      size_t *iov_len)
 {
 	assert(iov_len != NULL);
 	BUFFER &buf = conn.m_InBuf;
 	struct iovec *vecs = conn.m_IOVecs;
 	typename BUFFER::iterator itr = buf.end();
-	buf.addBack(wrap::Advance{size});
-	*iov_len = buf.getIOV(itr, vecs,
-			      Connection<BUFFER, NetProvider>::AVAILABLE_IOVEC_COUNT);
+	buf.addBack(wrap::Advance { size });
+	*iov_len = buf.getIOV(
+		itr, vecs,
+		Connection<BUFFER, NetProvider>::AVAILABLE_IOVEC_COUNT);
 	return vecs;
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 struct iovec *
 outBufferToIOV(Connection<BUFFER, NetProvider> &conn, size_t *iov_len)
 {
 	assert(iov_len != NULL);
 	BUFFER &buf = conn.m_OutBuf;
 	struct iovec *vecs = conn.m_IOVecs;
-	*iov_len = buf.getIOV(buf.begin(), conn.m_EndEncoded, vecs,
-			      Connection<BUFFER, NetProvider>::AVAILABLE_IOVEC_COUNT);
+	*iov_len = buf.getIOV(
+		buf.begin(), conn.m_EndEncoded, vecs,
+		Connection<BUFFER, NetProvider>::AVAILABLE_IOVEC_COUNT);
 	return vecs;
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
 hasSentBytes(Connection<BUFFER, NetProvider> &conn, size_t bytes)
 {
 	if (bytes > 0)
 		conn.m_OutBuf.dropFront(bytes);
-	if (! hasDataToSend(conn)) {
+	if (!hasDataToSend(conn)) {
 		conn.status.is_ready_to_send = false;
 		rlist_del(&conn.m_in_write);
 		LOG_DEBUG("Removed ", &conn.m_in_write, " from the write list");
 	}
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
 hasNotRecvBytes(Connection<BUFFER, NetProvider> &conn, size_t bytes)
 {
@@ -494,21 +506,21 @@ hasNotRecvBytes(Connection<BUFFER, NetProvider> &conn, size_t bytes)
 		conn.m_InBuf.dropBack(bytes);
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 bool
 hasDataToSend(Connection<BUFFER, NetProvider> &conn)
 {
 	return (conn.m_EndEncoded - conn.m_OutBuf.begin()) != 0;
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 bool
 hasDataToDecode(Connection<BUFFER, NetProvider> &conn)
 {
 	return conn.m_EndDecoded != conn.m_InBuf.end();
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 DecodeStatus
 decodeResponse(Connection<BUFFER, NetProvider> &conn)
 {
@@ -520,7 +532,7 @@ decodeResponse(Connection<BUFFER, NetProvider> &conn)
 		return DECODE_ERR;
 	}
 	response.size += MP_RESPONSE_SIZE;
-	if (! conn.m_InBuf.has(conn.m_EndDecoded, response.size)) {
+	if (!conn.m_InBuf.has(conn.m_EndDecoded, response.size)) {
 		conn.m_Decoder.reset(conn.m_EndDecoded);
 		return DECODE_NEEDMORE;
 	}
@@ -529,14 +541,15 @@ decodeResponse(Connection<BUFFER, NetProvider> &conn)
 		conn.m_EndDecoded += response.size;
 		return DECODE_ERR;
 	}
-	LOG_DEBUG("Header: sync=", response.header.sync, ", code=",
-		  response.header.code, ", schema=", response.header.schema_id);
+	LOG_DEBUG("Header: sync=", response.header.sync,
+		  ", code=", response.header.code,
+		  ", schema=", response.header.schema_id);
 	std::size_t response_size = response.size;
-	conn.m_Futures.insert({response.header.sync, std::move(response)});
+	conn.m_Futures.insert({ response.header.sync, std::move(response) });
 	conn.m_EndDecoded += response_size;
 	if ((gc_step++ % Connection<BUFFER, NetProvider>::GC_STEP_CNT) == 0)
 		conn.m_InBuf.flush();
-	if (! hasDataToDecode(conn)) {
+	if (!hasDataToDecode(conn)) {
 		conn.status.is_ready_to_decode = false;
 		rlist_del(&conn.m_in_read);
 		LOG_DEBUG("Removed ", &conn.m_in_write, " from the read list");
@@ -544,23 +557,24 @@ decodeResponse(Connection<BUFFER, NetProvider> &conn)
 	return DECODE_SUCC;
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 int
 decodeGreeting(Connection<BUFFER, NetProvider> &conn)
 {
-	//TODO: that's not zero-copy, should be rewritten in that pattern.
+	// TODO: that's not zero-copy, should be rewritten in that pattern.
 	char greeting_buf[Iproto::GREETING_SIZE];
 	conn.m_InBuf.get(conn.m_EndDecoded, greeting_buf, sizeof(greeting_buf));
 	conn.m_EndDecoded += sizeof(greeting_buf);
 	assert(conn.m_EndDecoded == conn.m_InBuf.end());
 	conn.m_Decoder.reset(conn.m_EndDecoded);
-	if (parseGreeting(std::string_view{greeting_buf, Iproto::GREETING_SIZE},
-			  conn.m_Greeting) != 0)
+	if (parseGreeting(
+		    std::string_view { greeting_buf, Iproto::GREETING_SIZE },
+		    conn.m_Greeting) != 0)
 		return -1;
 	LOG_DEBUG("Version: ", conn.m_Greeting.version_id);
 
 #ifndef NDEBUG
-	//print salt in hex format.
+	// print salt in hex format.
 	char hex_salt[Iproto::MAX_SALT_SIZE * 2 + 1];
 	const char *hex = "0123456789abcdef";
 	for (size_t i = 0; i < conn.m_Greeting.salt_size; i++) {

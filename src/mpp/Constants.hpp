@@ -36,41 +36,41 @@
 namespace mpp {
 
 namespace compact {
-enum Type : uint8_t {
-	MP_NIL  /* = 0x00 */,
-	MP_BOOL /* = 0x01 */,
-	MP_UINT /* = 0x02 */,
-	MP_INT  /* = 0x03 */,
-	MP_FLT  /* = 0x04 */,
-	MP_DBL  /* = 0x05 */,
-	MP_STR  /* = 0x06 */,
-	MP_BIN  /* = 0x07 */,
-	MP_ARR  /* = 0x08 */,
-	MP_MAP  /* = 0x09 */,
-	MP_EXT  /* = 0x0A */,
-	MP_END
-};
+	enum Type : uint8_t {
+		MP_NIL /* = 0x00 */,
+		MP_BOOL /* = 0x01 */,
+		MP_UINT /* = 0x02 */,
+		MP_INT /* = 0x03 */,
+		MP_FLT /* = 0x04 */,
+		MP_DBL /* = 0x05 */,
+		MP_STR /* = 0x06 */,
+		MP_BIN /* = 0x07 */,
+		MP_ARR /* = 0x08 */,
+		MP_MAP /* = 0x09 */,
+		MP_EXT /* = 0x0A */,
+		MP_END
+	};
 } // namespace compact {
 
 using TypeUnder_t = uint32_t;
 enum Type : TypeUnder_t {
-	MP_NIL  = 1u << compact::MP_NIL,
+	MP_NIL = 1u << compact::MP_NIL,
 	MP_BOOL = 1u << compact::MP_BOOL,
 	MP_UINT = 1u << compact::MP_UINT,
-	MP_INT  = 1u << compact::MP_INT,
-	MP_FLT  = 1u << compact::MP_FLT,
-	MP_DBL  = 1u << compact::MP_DBL,
-	MP_STR  = 1u << compact::MP_STR,
-	MP_BIN  = 1u << compact::MP_BIN,
-	MP_ARR  = 1u << compact::MP_ARR,
-	MP_MAP  = 1u << compact::MP_MAP,
-	MP_EXT  = 1u << compact::MP_EXT,
+	MP_INT = 1u << compact::MP_INT,
+	MP_FLT = 1u << compact::MP_FLT,
+	MP_DBL = 1u << compact::MP_DBL,
+	MP_STR = 1u << compact::MP_STR,
+	MP_BIN = 1u << compact::MP_BIN,
+	MP_ARR = 1u << compact::MP_ARR,
+	MP_MAP = 1u << compact::MP_MAP,
+	MP_EXT = 1u << compact::MP_EXT,
 	MP_AINT = (1u << compact::MP_UINT) | (1u << compact::MP_INT),
 	MP_AFLT = (1u << compact::MP_FLT) | (1u << compact::MP_DBL),
 	MP_ANUM = (1u << compact::MP_UINT) | (1u << compact::MP_INT) |
-		  (1u << compact::MP_FLT) | (1u << compact::MP_DBL),
+		(1u << compact::MP_FLT) | (1u << compact::MP_DBL),
 	MP_NONE = 0,
-	MP_ANY  = std::numeric_limits<TypeUnder_t>::max(),
+	MP_ANY = std::numeric_limits<TypeUnder_t>::max(),
 };
 
 enum ReadError_t {
@@ -92,21 +92,10 @@ enum ReadResult_t : TypeUnder_t {
 	READ_RESULT_END
 };
 
-inline const char *TypeName[] = {
-	"MP_NIL",
-	"MP_BOOL",
-	"MP_UINT",
-	"MP_INT",
-	"MP_FLT",
-	"MP_DBL",
-	"MP_STR",
-	"MP_BIN",
-	"MP_ARR",
-	"MP_MAP",
-	"MP_EXT",
-	"MP_BAD",
-	"MP_NONE"
-};
+inline const char *TypeName[] = { "MP_NIL", "MP_BOOL", "MP_UINT", "MP_INT",
+				  "MP_FLT", "MP_DBL",  "MP_STR",  "MP_BIN",
+				  "MP_ARR", "MP_MAP",  "MP_EXT",  "MP_BAD",
+				  "MP_NONE" };
 static_assert(std::size(TypeName) == compact::MP_END + 2, "Smth is forgotten");
 
 inline const char *ReadErrorName[] = {
@@ -154,17 +143,17 @@ operator~(ReadResult_t a)
 	return static_cast<ReadResult_t>(~static_cast<TypeUnder_t>(a));
 }
 
-inline std::ostream&
-operator<<(std::ostream& strm, compact::Type t)
+inline std::ostream &
+operator<<(std::ostream &strm, compact::Type t)
 {
 	if (t >= compact::Type::MP_END)
-		return strm << TypeName[compact::Type::MP_END]
-			    << "(" << static_cast<uint64_t>(t) << ")";
+		return strm << TypeName[compact::Type::MP_END] << "("
+			    << static_cast<uint64_t>(t) << ")";
 	return strm << TypeName[t];
 }
 
-inline std::ostream&
-operator<<(std::ostream& strm, Type t)
+inline std::ostream &
+operator<<(std::ostream &strm, Type t)
 {
 	if (t == MP_NONE)
 		return strm << TypeName[compact::Type::MP_END + 1];
@@ -184,17 +173,17 @@ operator<<(std::ostream& strm, Type t)
 	return strm;
 }
 
-inline std::ostream&
-operator<<(std::ostream& strm, ReadError_t t)
+inline std::ostream &
+operator<<(std::ostream &strm, ReadError_t t)
 {
 	if (t >= READ_ERROR_END)
-		return strm << ReadErrorName[READ_ERROR_END]
-			    << "(" << static_cast<uint64_t>(t) << ")";
+		return strm << ReadErrorName[READ_ERROR_END] << "("
+			    << static_cast<uint64_t>(t) << ")";
 	return strm << ReadErrorName[t];
 }
 
-inline std::ostream&
-operator<<(std::ostream& strm, ReadResult_t t)
+inline std::ostream &
+operator<<(std::ostream &strm, ReadResult_t t)
 {
 	if (t == READ_SUCCESS)
 		return strm << ReadErrorName[READ_ERROR_END + 1];
@@ -214,16 +203,31 @@ operator<<(std::ostream& strm, ReadResult_t t)
 	return strm;
 }
 
-struct StrValue { uint32_t offset; uint32_t size; };
-struct BinValue { uint32_t offset; uint32_t size; };
-struct ArrValue { uint32_t offset; uint32_t size; };
-struct MapValue { uint32_t offset; uint32_t size; };
-struct ExtValue { int8_t type; uint8_t offset; uint32_t size; };
+struct StrValue {
+	uint32_t offset;
+	uint32_t size;
+};
+struct BinValue {
+	uint32_t offset;
+	uint32_t size;
+};
+struct ArrValue {
+	uint32_t offset;
+	uint32_t size;
+};
+struct MapValue {
+	uint32_t offset;
+	uint32_t size;
+};
+struct ExtValue {
+	int8_t type;
+	uint8_t offset;
+	uint32_t size;
+};
 
 // The order of types myst be exactly the same as in Compact::Type!
-using Value_t = std::variant<
-	std::nullptr_t, bool, uint64_t, int64_t, float, double,
-	StrValue, BinValue, ArrValue, MapValue, ExtValue
->;
+using Value_t =
+	std::variant<std::nullptr_t, bool, uint64_t, int64_t, float, double,
+		     StrValue, BinValue, ArrValue, MapValue, ExtValue>;
 
 } // namespace mpp {

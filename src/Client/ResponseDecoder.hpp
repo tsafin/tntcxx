@@ -34,28 +34,25 @@
 #include <optional>
 #include <tuple>
 
+#include "../Utils/Base64.hpp"
+#include "../Utils/Logger.hpp"
 #include "IprotoConstants.hpp"
 #include "ResponseReader.hpp"
-#include "../Utils/Logger.hpp"
-#include "../Utils/Base64.hpp"
 
-enum DecodeStatus {
-	DECODE_SUCC = 0,
-	DECODE_ERR = -1,
-	DECODE_NEEDMORE = 1
-};
+enum DecodeStatus { DECODE_SUCC = 0, DECODE_ERR = -1, DECODE_NEEDMORE = 1 };
 
 /** Size in bytes of encoded into msgpack size of packet*/
 static constexpr size_t MP_RESPONSE_SIZE = 5;
 
-template<class BUFFER>
-class ResponseDecoder {
+template <class BUFFER>
+class ResponseDecoder
+{
 public:
 	ResponseDecoder(BUFFER &buf) : m_Dec(buf) {};
-	~ResponseDecoder() { };
+	~ResponseDecoder() {};
 	ResponseDecoder() = delete;
-	ResponseDecoder(const ResponseDecoder& decoder) = delete;
-	ResponseDecoder& operator = (const ResponseDecoder& decoder) = delete;
+	ResponseDecoder(const ResponseDecoder &decoder) = delete;
+	ResponseDecoder &operator=(const ResponseDecoder &decoder) = delete;
 
 	int decodeResponse(Response<BUFFER> &response);
 	int decodeResponseSize();
@@ -67,35 +64,36 @@ private:
 	mpp::Dec<BUFFER> m_Dec;
 };
 
-template<class BUFFER>
+template <class BUFFER>
 int
 ResponseDecoder<BUFFER>::decodeResponseSize()
 {
 	int size = -1;
-	m_Dec.SetReader(false, mpp::SimpleReader<BUFFER, mpp::MP_UINT, int>{size});
+	m_Dec.SetReader(false,
+			mpp::SimpleReader<BUFFER, mpp::MP_UINT, int> { size });
 	mpp::ReadResult_t res = m_Dec.Read();
-	//TODO: raise more detailed error
+	// TODO: raise more detailed error
 	if (res != mpp::READ_SUCCESS)
 		return -1;
 	return size;
 }
 
-template<class BUFFER>
+template <class BUFFER>
 int
 ResponseDecoder<BUFFER>::decodeHeader(Header &header)
 {
-	m_Dec.SetReader(false, HeaderReader{m_Dec, header});
+	m_Dec.SetReader(false, HeaderReader { m_Dec, header });
 	mpp::ReadResult_t res = m_Dec.Read();
 	if (res != mpp::READ_SUCCESS)
 		return -1;
 	return 0;
 }
 
-template<class BUFFER>
+template <class BUFFER>
 int
 ResponseDecoder<BUFFER>::decodeBody(Body<BUFFER> &body)
 {
-	m_Dec.SetReader(false, BodyReader{m_Dec, body});
+	m_Dec.SetReader(false, BodyReader { m_Dec, body });
 	mpp::ReadResult_t res = m_Dec.Read();
 	if (res != mpp::READ_SUCCESS)
 		return -1;
@@ -104,7 +102,7 @@ ResponseDecoder<BUFFER>::decodeBody(Body<BUFFER> &body)
 	return 0;
 }
 
-template<class BUFFER>
+template <class BUFFER>
 int
 ResponseDecoder<BUFFER>::decodeResponse(Response<BUFFER> &response)
 {
@@ -119,7 +117,7 @@ ResponseDecoder<BUFFER>::decodeResponse(Response<BUFFER> &response)
 	return 0;
 }
 
-template<class BUFFER>
+template <class BUFFER>
 void
 ResponseDecoder<BUFFER>::reset(iterator_t<BUFFER> &itr)
 {
@@ -133,7 +131,8 @@ versionId(unsigned major, unsigned minor, unsigned patch)
 }
 
 inline int
-parseGreeting(std::string_view raw, Greeting &greeting) {
+parseGreeting(std::string_view raw, Greeting &greeting)
+{
 	assert(raw.size() == Iproto::GREETING_SIZE);
 	std::string_view line1 = raw.substr(0, Iproto::GREETING_LINE1_SIZE);
 	std::string_view line2 = raw.substr(Iproto::GREETING_LINE1_SIZE,
@@ -153,9 +152,11 @@ parseGreeting(std::string_view raw, Greeting &greeting) {
 	greeting.version_id = versionId(major, minor, patch);
 
 	// Parse 2nd line.
-	std::string_view salt_encoded = line2.substr(0, Iproto::GREETING_MAX_SALT_SIZE);
+	std::string_view salt_encoded =
+		line2.substr(0, Iproto::GREETING_MAX_SALT_SIZE);
 	char *out = base64::decode(salt_encoded.begin(), salt_encoded.end(),
-				   greeting.salt).second;
+				   greeting.salt)
+			    .second;
 	greeting.salt_size = out - greeting.salt;
 	assert(greeting.salt_size <= sizeof(greeting.salt));
 	if (greeting.salt_size < Iproto::SCRAMBLE_SIZE)

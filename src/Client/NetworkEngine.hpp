@@ -30,34 +30,38 @@
  * SUCH DAMAGE.
  */
 #include <assert.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stdexcept>
 #include <cstring>
+#include <errno.h>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <sys/uio.h>
 #include <sys/un.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <unistd.h>
-#include <fcntl.h>
 
 #include "../Utils/Logger.hpp"
 
 #ifdef offsetof
 #undef offsetof
 #endif
-#define offsetof(type, member) ((size_t) &((type *)0)->member)
+#define offsetof(type, member) ((size_t) & ((type *)0)->member)
 
 /** Simple wrapper to implement RAII over socket. */
 struct Socket {
-	Socket(int sockfd) : fd(sockfd) { };
-	~Socket() { if (fd >= 0) close(fd); }
+	Socket(int sockfd) : fd(sockfd) {};
+	~Socket()
+	{
+		if (fd >= 0)
+			close(fd);
+	}
 	int fd;
 };
 
@@ -81,11 +85,12 @@ netWouldBlock(int err)
 	return err == EAGAIN || err == EWOULDBLOCK || err == EINTR;
 }
 
-class NetworkEngine {
+class NetworkEngine
+{
 public:
-	static int connectINET(const std::string_view& addr_str, unsigned port,
+	static int connectINET(const std::string_view &addr_str, unsigned port,
 			       size_t timeout);
-	static int connectUNIX(const std::string_view& path);
+	static int connectUNIX(const std::string_view &path);
 	static void close(int socket);
 
 	static int send(int socket, struct iovec *iov, size_t iov_len);
@@ -98,7 +103,7 @@ public:
 };
 
 inline int
-NetworkEngine::connectINET(const std::string_view& addr_str, unsigned port,
+NetworkEngine::connectINET(const std::string_view &addr_str, unsigned port,
 			   size_t timeout)
 {
 	struct addrinfo hints, *res;
@@ -142,8 +147,8 @@ NetworkEngine::connectINET(const std::string_view& addr_str, unsigned port,
 		return -1;
 	}
 	if (rc == 0) {
-		LOG_ERROR("connect() is timed out! Waited for ",
-			  timeout, " seconds");
+		LOG_ERROR("connect() is timed out! Waited for ", timeout,
+			  " seconds");
 		return -1;
 	}
 	assert(rc == 1);
@@ -178,7 +183,7 @@ NetworkEngine::connectINET(const std::string_view& addr_str, unsigned port,
 }
 
 inline int
-NetworkEngine::connectUNIX(const std::string_view& path)
+NetworkEngine::connectUNIX(const std::string_view &path)
 {
 	Socket soc(socket(AF_UNIX, SOCK_STREAM, 0));
 	if (soc.fd < 0)
@@ -228,7 +233,7 @@ NetworkEngine::sendall(int socket, struct iovec *iov, size_t iov_len,
 		if (rc == -1)
 			return -1;
 		*sent_bytes += rc;
-		while ((size_t) rc > iov->iov_len) {
+		while ((size_t)rc > iov->iov_len) {
 			rc -= iov->iov_len;
 			iov = iov + 1;
 			assert(msg.msg_iovlen > 0);
@@ -264,7 +269,7 @@ NetworkEngine::recvall(int socket, struct iovec *iov, size_t iov_len,
 	if (rc == -1)
 		return -1;
 	int read_bytes = rc;
-	while ((size_t) read_bytes > iov->iov_len) {
+	while ((size_t)read_bytes > iov->iov_len) {
 		read_bytes -= iov->iov_len;
 		iov = iov + 1;
 		assert(msg.msg_iovlen > 0);

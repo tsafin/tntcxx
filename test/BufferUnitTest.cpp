@@ -31,8 +31,8 @@
 
 #include "../src/Buffer/Buffer.hpp"
 
-#include <sys/uio.h> /* struct iovec */
 #include <iostream>
+#include <sys/uio.h> /* struct iovec */
 
 #include "Utils/Helpers.hpp"
 
@@ -53,11 +53,11 @@ struct struct_sample {
 	int i;
 	char c;
 	double d;
-} struct_sample = {1, '1', 1.1};
+} struct_sample = { 1, '1', 1.1 };
 
 static char end_marker = '#';
 
-template<size_t N>
+template <size_t N>
 static void
 fillBuffer(tnt::Buffer<N> &buffer, size_t size)
 {
@@ -67,7 +67,7 @@ fillBuffer(tnt::Buffer<N> &buffer, size_t size)
 	}
 }
 
-template<size_t N>
+template <size_t N>
 static void
 eraseBuffer(tnt::Buffer<N> &buffer)
 {
@@ -84,7 +84,7 @@ eraseBuffer(tnt::Buffer<N> &buffer)
  * Dump buffer to @output string with human readable format.
  * Not the fastest, but quite elementary implementation.
  */
-template<size_t N>
+template <size_t N>
 static void
 dumpBuffer(tnt::Buffer<N> &buffer, std::string &output)
 {
@@ -95,8 +95,9 @@ dumpBuffer(tnt::Buffer<N> &buffer, std::string &output)
 	for (auto itr = buffer.begin(); itr != buffer.end(); itr += vec_len) {
 		size_t vec_cnt = buffer.getIOV(buffer.begin(), vec, IOVEC_MAX);
 		for (size_t i = 0; i < vec_cnt; ++i) {
-			output.append("|sz=" + std::to_string(vec[i].iov_len) + "|");
-			output.append((const char *) vec[i].iov_base,
+			output.append("|sz=" + std::to_string(vec[i].iov_len) +
+				      "|");
+			output.append((const char *)vec[i].iov_base,
 				      vec[i].iov_len);
 			output.append("|");
 			vec_len += vec[i].iov_len;
@@ -106,7 +107,7 @@ dumpBuffer(tnt::Buffer<N> &buffer, std::string &output)
 	output.insert(0, "bcnt=" + std::to_string(block_cnt));
 }
 
-template<size_t N>
+template <size_t N>
 static void
 printBuffer(tnt::Buffer<N> &buffer)
 {
@@ -118,7 +119,7 @@ printBuffer(tnt::Buffer<N> &buffer)
 /**
  * AddBack() + dropBack()/dropFront() combinations.
  */
-template<size_t N>
+template <size_t N>
 void
 buffer_basic()
 {
@@ -126,7 +127,7 @@ buffer_basic()
 	tnt::Buffer<N> buf;
 	fail_unless(buf.empty());
 	buf.addBack(int_sample);
-	fail_unless(! buf.empty());
+	fail_unless(!buf.empty());
 	fail_if(buf.debugSelfCheck());
 	auto itr = buf.begin();
 	int int_res = -1;
@@ -138,8 +139,8 @@ buffer_basic()
 	fail_unless(buf.empty());
 	fail_if(buf.debugSelfCheck());
 	/* Test non-template ::addBack() method. */
-	buf.addBack(wrap::Data{char_samples, SAMPLES_CNT});
-	fail_unless(! buf.empty());
+	buf.addBack(wrap::Data { char_samples, SAMPLES_CNT });
+	fail_unless(!buf.empty());
 	fail_if(buf.debugSelfCheck());
 	char char_res[SAMPLES_CNT];
 	itr = buf.begin();
@@ -152,7 +153,7 @@ buffer_basic()
 	fail_if(buf.debugSelfCheck());
 	/* Add double value in buffer. */
 	itr = buf.end();
-	buf.addBack(wrap::Advance{sizeof(double)});
+	buf.addBack(wrap::Advance { sizeof(double) });
 	buf.set(itr, double_sample);
 	double double_res = 0;
 	buf.get(itr, double_res);
@@ -164,9 +165,9 @@ buffer_basic()
 	fail_if(buf.debugSelfCheck());
 	/* Add struct value in buffer. */
 	itr = buf.end();
-	buf.addBack(wrap::Advance{sizeof(struct_sample)});
+	buf.addBack(wrap::Advance { sizeof(struct_sample) });
 	buf.set(itr, struct_sample);
-	struct struct_sample struct_res = { };
+	struct struct_sample struct_res = {};
 	buf.get(itr, struct_res);
 	fail_unless(struct_res.c == struct_sample.c);
 	fail_unless(struct_res.i == struct_sample.i);
@@ -219,7 +220,7 @@ buffer_basic()
 /**
  * AddBack() + read combinations.
  */
-template<size_t N>
+template <size_t N>
 void
 buffer_add_read()
 {
@@ -232,19 +233,23 @@ buffer_add_read()
 		int r = rand();
 		switch (r % 5) {
 		case 0:
-			buf.addBack(static_cast<uint8_t>(r)); break;
+			buf.addBack(static_cast<uint8_t>(r));
+			break;
 		case 1:
-			buf.addBack(static_cast<uint16_t>(r)); break;
+			buf.addBack(static_cast<uint16_t>(r));
+			break;
 		case 2:
-			buf.addBack(static_cast<uint32_t>(r)); break;
+			buf.addBack(static_cast<uint32_t>(r));
+			break;
 		case 3:
-			buf.addBack(static_cast<uint64_t>(r)); break;
+			buf.addBack(static_cast<uint64_t>(r));
+			break;
 		default: {
 			size_t sz = r % 13 + 1;
 			char data[16];
 			for (size_t j = 0; j < sz; j++)
 				data[j] = rand();
-			buf.addBack(wrap::Data{data, sz});
+			buf.addBack(wrap::Data { data, sz });
 		}
 		}
 	}
@@ -317,7 +322,7 @@ buffer_add_read()
 	}
 	fail_unless(itr2 == buf.template end<true>());
 }
-template<size_t N>
+template <size_t N>
 void
 buffer_iterator()
 {
@@ -358,14 +363,17 @@ buffer_iterator()
 	fail_if(buf.debugSelfCheck());
 
 	itr = buf.begin();
-	const auto& citr = itr;
+	const auto &citr = itr;
 	typename tnt::Buffer<N>::iterator itr2(itr);
 
 	auto litr1 = itr.enlight();
 	const auto litr2 = citr.enlight();
 	auto litr3 = litr1.enlight();
 	auto litr4 = litr2.enlight();
-	(void)litr1; (void)litr2; (void)litr3; (void)litr4;
+	(void)litr1;
+	(void)litr2;
+	(void)litr3;
+	(void)litr4;
 
 	static_assert(sizeof(itr) == 32, "Just for information");
 	static_assert(sizeof(itr.enlight()) == 8, "Just for information");
@@ -417,7 +425,7 @@ buffer_insert()
 	eraseBuffer(buf);
 	/* Try the same but with more elements in buffer (i.e. more blocks). */
 	fillBuffer(buf, SAMPLES_CNT * 2);
-	//buf.addBack(end_marker);
+	// buf.addBack(end_marker);
 	mid_itr = buf.end();
 	fillBuffer(buf, SAMPLES_CNT * 4);
 	mid_itr2 = buf.end();
@@ -524,7 +532,7 @@ buffer_release()
 /**
  * Complex test emulating IPROTO interaction.
  */
-template<size_t N>
+template <size_t N>
 void
 buffer_out()
 {
@@ -532,7 +540,7 @@ buffer_out()
 	tnt::Buffer<N> buf;
 	buf.addBack(0xce); // uin32 tag
 	auto save = buf.end();
-	buf.addBack(wrap::Advance{4}); // uint32, will be set later
+	buf.addBack(wrap::Advance { 4 }); // uint32, will be set later
 	buf.addBack(0x82); // map(2) - header
 	buf.addBack(0x00); // IPROTO_REQUEST_TYPE
 	buf.addBack(0x01); // IPROTO_SELECT
@@ -560,7 +568,7 @@ buffer_out()
 /**
  * Test iterator::get() method.
  */
-template<size_t N>
+template <size_t N>
 void
 buffer_iterator_get()
 {
@@ -579,7 +587,8 @@ buffer_iterator_get()
 	fail_if(buf.debugSelfCheck());
 }
 
-int main()
+int
+main()
 {
 	buffer_basic<SMALL_BLOCK_SZ>();
 	buffer_basic<LARGE_BLOCK_SZ>();

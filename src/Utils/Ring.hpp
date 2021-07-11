@@ -51,7 +51,7 @@ struct Ring {
 	Ring() noexcept { trash(); };
 
 	// Makes a monoring.
-	explicit Ring(int) noexcept : m_Neigh{this, this} {}
+	explicit Ring(int) noexcept : m_Neigh { this, this } {}
 
 	// Add a constructing node to existing ring, after (if back == false)
 	// or before (if back == true) given node.
@@ -59,9 +59,9 @@ struct Ring {
 
 	// Copy/move ctor/assign are deleted. The ctor above should be used.
 	Ring(const Ring &) noexcept = delete;
-	Ring& operator=(const Ring &) noexcept = delete;
+	Ring &operator=(const Ring &) noexcept = delete;
 	Ring(Ring &&) noexcept = delete;
-	Ring& operator=(Ring &&) noexcept = delete;
+	Ring &operator=(Ring &&) noexcept = delete;
 
 	// Note that destructor in empty. If a node is in ring (and not mono)
 	// you have to remove the node manually.
@@ -117,29 +117,34 @@ private:
 	void trash() noexcept;
 };
 
-inline Ring *Ring::rgNeigh(bool forward) noexcept
+inline Ring *
+Ring::rgNeigh(bool forward) noexcept
 {
 	return m_Neigh[forward];
 }
 
-inline const Ring *Ring::rgNeigh(bool forward) const noexcept
+inline const Ring *
+Ring::rgNeigh(bool forward) const noexcept
 {
 	return m_Neigh[forward];
 }
 
-inline void Ring::rgInit() noexcept
+inline void
+Ring::rgInit() noexcept
 {
 	make_monoring();
 }
 
-inline void Ring::rgAdd(Ring *a, bool back) noexcept
+inline void
+Ring::rgAdd(Ring *a, bool back) noexcept
 {
 	assert(a != this || a->rgIsMono());
 	link(a, m_Neigh[!back], back);
 	link(this, a, back);
 }
 
-inline void Ring::rgRemove() noexcept
+inline void
+Ring::rgRemove() noexcept
 {
 #ifndef NDEBUG
 	bool was_mono = rgIsMono();
@@ -151,32 +156,37 @@ inline void Ring::rgRemove() noexcept
 #endif
 }
 
-inline void Ring::rgJoin(Ring *a, bool invert) noexcept
+inline void
+Ring::rgJoin(Ring *a, bool invert) noexcept
 {
 	Ring *node = a->m_Neigh[invert];
 	link(m_Neigh[invert], a, invert);
 	link(node, this, invert);
 }
 
-inline void Ring::rgSplit(Ring *a, bool invert) noexcept
+inline void
+Ring::rgSplit(Ring *a, bool invert) noexcept
 {
 	Ring *s = a->m_Neigh[invert];
 	link(m_Neigh[invert], a, invert);
 	link(s, this, invert);
 }
 
-inline void Ring::rgSwap(Ring *a) noexcept
+inline void
+Ring::rgSwap(Ring *a) noexcept
 {
 	rgJoin(a, false);
 	rgSplit(a, true);
 }
 
-inline bool Ring::rgIsMono() const noexcept
+inline bool
+Ring::rgIsMono() const noexcept
 {
 	return this == m_Neigh[0];
 }
 
-inline size_t Ring::rgCalcSize() const noexcept
+inline size_t
+Ring::rgCalcSize() const noexcept
 {
 	size_t res = 1;
 	for (const Ring *r = m_Neigh[0]; r != this; r = r->m_Neigh[0])
@@ -184,7 +194,8 @@ inline size_t Ring::rgCalcSize() const noexcept
 	return res;
 }
 
-inline int Ring::rgSelfCheck() const noexcept
+inline int
+Ring::rgSelfCheck() const noexcept
 {
 	const Ring *sRing = this;
 	do {
@@ -195,26 +206,30 @@ inline int Ring::rgSelfCheck() const noexcept
 	return 0;
 }
 
-inline void Ring::link(Ring *prev, Ring *next, bool invert) noexcept
+inline void
+Ring::link(Ring *prev, Ring *next, bool invert) noexcept
 {
 	prev->m_Neigh[!invert] = next;
 	next->m_Neigh[invert] = prev;
 }
 
-inline void Ring::unlink() noexcept
+inline void
+Ring::unlink() noexcept
 {
 	link(m_Neigh[0], m_Neigh[1], false);
 }
 
-inline void Ring::make_monoring() noexcept
+inline void
+Ring::make_monoring() noexcept
 {
 	m_Neigh[0] = m_Neigh[1] = this;
 }
 
-inline void Ring::trash() noexcept
+inline void
+Ring::trash() noexcept
 {
 #ifndef NDEBUG
-	m_Neigh[0] = m_Neigh[1] = reinterpret_cast<Ring*>(42);
+	m_Neigh[0] = m_Neigh[1] = reinterpret_cast<Ring *>(42);
 #endif
 }
 

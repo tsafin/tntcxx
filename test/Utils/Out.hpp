@@ -11,9 +11,10 @@
 
 namespace out_internal {
 template <class... T>
-void out(std::string_view names, T&&... t)
+void
+out(std::string_view names, T &&...t)
 {
-	auto helper = [&names](auto&& t) {
+	auto helper = [&names](auto &&t) {
 		size_t pos = names.find(',');
 		if (pos == names.npos) {
 			std::cout << names << " = " << t;

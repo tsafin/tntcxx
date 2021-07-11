@@ -29,65 +29,60 @@
  * SUCH DAMAGE.
  */
 #include "Utils/Helpers.hpp"
-#include "Utils/TupleReader.hpp"
 #include "Utils/System.hpp"
+#include "Utils/TupleReader.hpp"
 
-#include "../src/Client/LibevNetProvider.hpp"
 #include "../src/Client/Connector.hpp"
+#include "../src/Client/LibevNetProvider.hpp"
 
 const char *localhost = "127.0.0.1";
 int port = 3301;
-int WAIT_TIMEOUT = 1000; //milliseconds
+int WAIT_TIMEOUT = 1000; // milliseconds
 
 using Net_t = DefaultNetProvider<Buf_t, NetworkEngine>;
 
-
-enum ResultFormat {
-	TUPLES = 0,
-	MULTI_RETURN,
-	SELECT_RETURN
-};
+enum ResultFormat { TUPLES = 0, MULTI_RETURN, SELECT_RETURN };
 
 template <class BUFFER, class NetProvider = Net_t>
 void
 printResponse(Connection<BUFFER, NetProvider> &conn, Response<BUFFER> &response,
-	       enum ResultFormat format = TUPLES)
+	      enum ResultFormat format = TUPLES)
 {
 	if (response.body.error_stack != std::nullopt) {
 		Error err = (*response.body.error_stack).error;
-		std::cout << "RESPONSE ERROR: msg=" << err.msg <<
-			  " line=" << err.file << " file=" << err.file <<
-			  " errno=" << err.saved_errno <<
-			  " type=" << err.type_name <<
-			  " code=" << err.errcode << std::endl;
+		std::cout << "RESPONSE ERROR: msg=" << err.msg
+			  << " line=" << err.file << " file=" << err.file
+			  << " errno=" << err.saved_errno
+			  << " type=" << err.type_name
+			  << " code=" << err.errcode << std::endl;
 		return;
 	}
 	assert(response.body.data != std::nullopt);
-	Data<BUFFER>& data = *response.body.data;
+	Data<BUFFER> &data = *response.body.data;
 	if (data.tuples.empty()) {
 		std::cout << "Empty result" << std::endl;
 		return;
 	}
 	std::vector<UserTuple> tuples;
 	switch (format) {
-		case TUPLES:
-			tuples = decodeUserTuple(conn.getInBuf(), data);
-			break;
-		case MULTI_RETURN:
-			tuples = decodeMultiReturn(conn.getInBuf(), data);
-			break;
-		case SELECT_RETURN:
-			tuples = decodeSelectReturn(conn.getInBuf(), data);
-			break;
-		default:
-			assert(0);
+	case TUPLES:
+		tuples = decodeUserTuple(conn.getInBuf(), data);
+		break;
+	case MULTI_RETURN:
+		tuples = decodeMultiReturn(conn.getInBuf(), data);
+		break;
+	case SELECT_RETURN:
+		tuples = decodeSelectReturn(conn.getInBuf(), data);
+		break;
+	default:
+		assert(0);
 	}
-	for (auto const& t : tuples) {
+	for (auto const &t : tuples) {
 		std::cout << t << std::endl;
 	}
 }
 
-template<class BUFFER, class NetProvider = Net_t>
+template <class BUFFER, class NetProvider = Net_t>
 bool
 compareTupleResult(std::vector<UserTuple> &tuples,
 		   std::vector<UserTuple> &expected);
@@ -151,7 +146,7 @@ single_conn_ping(Connector<BUFFER, NetProvider> &client)
 	features[0] = conn.ping();
 	features[1] = conn.ping();
 	features[2] = conn.ping();
-	client.waitAll(conn, (rid_t *) &features, 3, 1);
+	client.waitAll(conn, (rid_t *)&features, 3, 1);
 	for (int i = 0; i < 3; ++i) {
 		fail_unless(conn.futureIsReady(features[i]));
 		response = conn.getResponse(features[i]);
@@ -188,7 +183,7 @@ many_conn_ping(Connector<BUFFER, NetProvider> &client)
 	rid_t f2 = conn2.ping();
 	rid_t f3 = conn3.ping();
 	Connection<Buf_t, NetProvider> *conn = client.waitAny(WAIT_TIMEOUT);
-	(void) conn;
+	(void)conn;
 	fail_unless(conn1.futureIsReady(f1) || conn2.futureIsReady(f2) ||
 		    conn3.futureIsReady(f3));
 	client.close(conn1);
@@ -411,7 +406,7 @@ single_conn_upsert(Connector<BUFFER, NetProvider> &client)
 
 	TEST_CASE("upsert-update");
 	tuple = std::make_tuple(666, "111", 1.01);
-	std::tuple op2 =  std::make_tuple("=", 1, "upsert-update");
+	std::tuple op2 = std::make_tuple("=", 1, "upsert-update");
 	rid_t f2 = conn.space[space_id].upsert(tuple, std::make_tuple(op2));
 	client.wait(conn, f2, WAIT_TIMEOUT);
 	response = conn.getResponse(f2);
@@ -439,7 +434,8 @@ single_conn_select(Connector<BUFFER, NetProvider> &client)
 	rid_t f1 = s.select(std::make_tuple(666));
 	rid_t f2 = s.index[index_id].select(std::make_tuple(777));
 	rid_t f3 = s.select(std::make_tuple(-1), index_id, limit, offset, iter);
-	rid_t f4 = s.select(std::make_tuple(), index_id, limit + 3, offset, IteratorType::ALL);
+	rid_t f4 = s.select(std::make_tuple(), index_id, limit + 3, offset,
+			    IteratorType::ALL);
 
 	client.wait(conn, f1, WAIT_TIMEOUT);
 	fail_unless(conn.futureIsReady(f1));
@@ -483,17 +479,19 @@ single_conn_call(Connector<BUFFER, NetProvider> &client)
 {
 	TEST_INIT(0);
 	const static char *return_replace = "remote_replace";
-	const static char *return_select  = "remote_select";
-	const static char *return_uint    = "remote_uint";
-	const static char *return_multi   = "remote_multi";
+	const static char *return_select = "remote_select";
+	const static char *return_uint = "remote_uint";
+	const static char *return_multi = "remote_multi";
 
 	Connection<Buf_t, NetProvider> conn(client);
 	int rc = client.connect(conn, localhost, port);
 	fail_unless(rc == 0);
 
 	TEST_CASE("call remote_replace");
-	rid_t f1 = conn.call(return_replace, std::make_tuple(5, "value_from_test", 5.55));
-	rid_t f2 = conn.call(return_replace, std::make_tuple(6, "value_from_test2", 3.33));
+	rid_t f1 = conn.call(return_replace,
+			     std::make_tuple(5, "value_from_test", 5.55));
+	rid_t f2 = conn.call(return_replace,
+			     std::make_tuple(6, "value_from_test2", 3.33));
 
 	client.wait(conn, f1, WAIT_TIMEOUT);
 	fail_unless(conn.futureIsReady(f1));
@@ -557,7 +555,8 @@ single_conn_call(Connector<BUFFER, NetProvider> &client)
 	client.close(conn);
 }
 
-int main()
+int
+main()
 {
 	if (cleanDir() != 0)
 		return -1;
@@ -579,8 +578,8 @@ int main()
 
 	/* LibEv network provide */
 	using NetLibEv_t = LibevNetProvider<Buf_t, NetworkEngine>;
-	Connector<Buf_t, NetLibEv_t > another_client;
-	trivial<Buf_t, NetLibEv_t >(another_client);
+	Connector<Buf_t, NetLibEv_t> another_client;
+	trivial<Buf_t, NetLibEv_t>(another_client);
 	single_conn_ping<Buf_t, NetLibEv_t>(another_client);
 	many_conn_ping<Buf_t, NetLibEv_t>(another_client);
 	single_conn_error<Buf_t, NetLibEv_t>(another_client);

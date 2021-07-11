@@ -32,7 +32,7 @@
 #include "../src/Buffer/Buffer.hpp"
 #include "../src/mpp/Dec.hpp"
 
-//doclabel13-1
+// doclabel13-1
 /**
  * Corresponds to tuples stored in user's space:
  * box.execute("CREATE TABLE t (id UNSIGNED PRIMARY KEY, a TEXT, d DOUBLE);")
@@ -42,33 +42,34 @@ struct UserTuple {
 	std::string field2;
 	double field3;
 };
-//doclabel13-2
+// doclabel13-2
 
-std::ostream&
-operator<<(std::ostream& strm, const UserTuple &t)
+std::ostream &
+operator<<(std::ostream &strm, const UserTuple &t)
 {
-	return strm << "Tuple: field1=" << t.field1 << " field2=" << t.field2 <<
-		       " field3=" << t.field3;
+	return strm << "Tuple: field1=" << t.field1 << " field2=" << t.field2
+		    << " field3=" << t.field3;
 }
 
 using Buf_t = tnt::Buffer<16 * 1024>;
 using BufIter_t = typename Buf_t::iterator;
 using Network_t = NetworkEngine;
-using Net_t = DefaultNetProvider<Buf_t, Network_t >;
+using Net_t = DefaultNetProvider<Buf_t, Network_t>;
 
-//doclabel14-1
+// doclabel14-1
 struct UserTupleValueReader : mpp::DefaultErrorHandler {
-	explicit UserTupleValueReader(UserTuple& t) : tuple(t) {}
-	static constexpr mpp::Type VALID_TYPES = mpp::MP_UINT | mpp::MP_STR | mpp::MP_DBL;
+	explicit UserTupleValueReader(UserTuple &t) : tuple(t) {}
+	static constexpr mpp::Type VALID_TYPES =
+		mpp::MP_UINT | mpp::MP_STR | mpp::MP_DBL;
 	template <class T>
-	void Value(BufIter_t&, mpp::compact::Type, T v)
+	void Value(BufIter_t &, mpp::compact::Type, T v)
 	{
 		using A = UserTuple;
 		static constexpr std::tuple map(&A::field1, &A::field3);
 		auto ptr = std::get<std::decay_t<T> A::*>(map);
 		tuple.*ptr = v;
 	}
-	void Value(BufIter_t& itr, mpp::compact::Type, mpp::StrValue v)
+	void Value(BufIter_t &itr, mpp::compact::Type, mpp::StrValue v)
 	{
 		BufIter_t tmp = itr;
 		tmp += v.offset;
@@ -81,28 +82,29 @@ struct UserTupleValueReader : mpp::DefaultErrorHandler {
 	}
 	void WrongType(mpp::Type expected, mpp::Type got)
 	{
-		std::cout << "expected type is " << expected <<
-			     " but got " << got << std::endl;
+		std::cout << "expected type is " << expected << " but got "
+			  << got << std::endl;
 	}
 
-	BufIter_t* StoreEndIterator() { return nullptr; }
-	UserTuple& tuple;
+	BufIter_t *StoreEndIterator() { return nullptr; }
+	UserTuple &tuple;
 };
-//doclabel14-2
+// doclabel14-2
 
-//doclabel15-1
+// doclabel15-1
 template <class BUFFER>
 struct UserTupleReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_ARR> {
 
-	UserTupleReader(mpp::Dec<BUFFER>& d, UserTuple& t) : dec(d), tuple(t) {}
+	UserTupleReader(mpp::Dec<BUFFER> &d, UserTuple &t) : dec(d), tuple(t) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::ArrValue u)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   mpp::ArrValue u)
 	{
 		assert(u.size == 3);
-		(void) u;
-		dec.SetReader(false, UserTupleValueReader{tuple});
+		(void)u;
+		dec.SetReader(false, UserTupleValueReader { tuple });
 	}
-	mpp::Dec<BUFFER>& dec;
-	UserTuple& tuple;
+	mpp::Dec<BUFFER> &dec;
+	UserTuple &tuple;
 };
-//doclabel15-2
+// doclabel15-2

@@ -34,9 +34,9 @@
 #include <tuple>
 #include <vector>
 
-#include "IprotoConstants.hpp"
-#include "../mpp/mpp.hpp"
 #include "../Utils/Logger.hpp"
+#include "../mpp/mpp.hpp"
+#include "IprotoConstants.hpp"
 
 struct Header {
 	int code;
@@ -44,7 +44,7 @@ struct Header {
 	int schema_id;
 };
 
-template<class BUFFER>
+template <class BUFFER>
 using iterator_t = typename BUFFER::iterator;
 
 struct Error {
@@ -64,15 +64,16 @@ struct ErrorStack {
 	Error error;
 };
 
-template<class BUFFER>
+template <class BUFFER>
 struct Tuple {
-	Tuple(iterator_t<BUFFER> &itr, size_t count) :
-		begin(itr), field_count(count) {}
+	Tuple(iterator_t<BUFFER> &itr, size_t count)
+		: begin(itr), field_count(count)
+	{}
 	iterator_t<BUFFER> begin;
 	size_t field_count;
 };
 
-template<class BUFFER>
+template <class BUFFER>
 struct Data {
 	Data(iterator_t<BUFFER> &itr) : end(itr) {}
 	/**
@@ -84,13 +85,13 @@ struct Data {
 	iterator_t<BUFFER> end;
 };
 
-template<class BUFFER>
+template <class BUFFER>
 struct Body {
 	std::optional<ErrorStack> error_stack;
 	std::optional<Data<BUFFER>> data;
 };
 
-template<class BUFFER>
+template <class BUFFER>
 struct Response {
 	Header header;
 	Body<BUFFER> body;
@@ -107,51 +108,53 @@ struct Greeting {
 template <class BUFFER>
 struct HeaderKeyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_UINT> {
 
-	HeaderKeyReader(mpp::Dec<BUFFER>& d, Header& h) : dec(d), header(h) {}
+	HeaderKeyReader(mpp::Dec<BUFFER> &d, Header &h) : dec(d), header(h) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, uint64_t key)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type, uint64_t key)
 	{
 		using Int_t = mpp::SimpleReader<BUFFER, mpp::MP_UINT, int>;
 		switch (key) {
-			case Iproto::REQUEST_TYPE:
-				dec.SetReader(true, Int_t{header.code});
-				break;
-			case Iproto::SYNC:
-				dec.SetReader(true, Int_t{header.sync});
-				break;
-			case Iproto::SCHEMA_VERSION:
-				dec.SetReader(true, Int_t{header.schema_id});
-				break;
-			default:
-				LOG_ERROR("Invalid header key ", key);
-				dec.AbortAndSkipRead();
+		case Iproto::REQUEST_TYPE:
+			dec.SetReader(true, Int_t { header.code });
+			break;
+		case Iproto::SYNC:
+			dec.SetReader(true, Int_t { header.sync });
+			break;
+		case Iproto::SCHEMA_VERSION:
+			dec.SetReader(true, Int_t { header.schema_id });
+			break;
+		default:
+			LOG_ERROR("Invalid header key ", key);
+			dec.AbortAndSkipRead();
 		}
 	}
-	mpp::Dec<BUFFER>& dec;
-	Header& header;
+	mpp::Dec<BUFFER> &dec;
+	Header &header;
 };
 
 template <class BUFFER>
 struct HeaderReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_MAP> {
 
-	HeaderReader(mpp::Dec<BUFFER>& d, Header& h) : dec(d), header(h) {}
+	HeaderReader(mpp::Dec<BUFFER> &d, Header &h) : dec(d), header(h) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::MapValue)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   mpp::MapValue)
 	{
-		dec.SetReader(false, HeaderKeyReader{dec, header});
+		dec.SetReader(false, HeaderKeyReader { dec, header });
 	}
 
-	mpp::Dec<BUFFER>& dec;
-	Header& header;
+	mpp::Dec<BUFFER> &dec;
+	Header &header;
 };
 
 template <class BUFFER>
 struct TupleReader : mpp::ReaderTemplate<BUFFER> {
 
-	TupleReader(mpp::Dec<BUFFER>& d, Data<BUFFER>& dt) : dec(d), data(dt) {}
+	TupleReader(mpp::Dec<BUFFER> &d, Data<BUFFER> &dt) : dec(d), data(dt) {}
 	static constexpr mpp::Type VALID_TYPES = mpp::MP_ARR | mpp::MP_UINT |
-		mpp::MP_INT | mpp::MP_BOOL | mpp::MP_DBL | mpp::MP_STR; //| mpp::MP_NIL;
-	void Value(iterator_t<BUFFER>& arg, mpp::compact::Type, mpp::ArrValue u)
+		mpp::MP_INT | mpp::MP_BOOL | mpp::MP_DBL |
+		mpp::MP_STR; //| mpp::MP_NIL;
+	void Value(iterator_t<BUFFER> &arg, mpp::compact::Type, mpp::ArrValue u)
 	{
 		data.tuples.emplace_back(arg, u.size);
 		dec.Skip();
@@ -161,160 +164,186 @@ struct TupleReader : mpp::ReaderTemplate<BUFFER> {
 	 * value. In this case store pointer right to its value.
 	 */
 	template <class T>
-	void Value(iterator_t<BUFFER>& arg, mpp::compact::Type, T v)
+	void Value(iterator_t<BUFFER> &arg, mpp::compact::Type, T v)
 	{
-		(void) v;
+		(void)v;
 		data.tuples.emplace_back(arg, 1);
 		dec.Skip();
 	}
 	void WrongType(mpp::Type expected, mpp::Type got)
 	{
-		std::cout << "expected type is " << expected <<
-			  " but got " << got << std::endl;
+		std::cout << "expected type is " << expected << " but got "
+			  << got << std::endl;
 	}
-	mpp::Dec<BUFFER>& dec;
-	Data<BUFFER>& data;
+	mpp::Dec<BUFFER> &dec;
+	Data<BUFFER> &data;
 };
 
 template <class BUFFER>
 struct DataReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_ARR> {
 
-	DataReader(mpp::Dec<BUFFER>& d, Data<BUFFER>& dt) : dec(d), data(dt) {}
+	DataReader(mpp::Dec<BUFFER> &d, Data<BUFFER> &dt) : dec(d), data(dt) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::ArrValue u)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   mpp::ArrValue u)
 	{
 		data.dimension = u.size;
-		dec.SetReader(false, TupleReader<BUFFER>{dec, data});
+		dec.SetReader(false, TupleReader<BUFFER> { dec, data });
 	}
 
-	mpp::Dec<BUFFER>& dec;
-	Data<BUFFER>& data;
+	mpp::Dec<BUFFER> &dec;
+	Data<BUFFER> &data;
 };
 
 template <class BUFFER>
 struct ErrorFieldsKeyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_STR> {
 
-	ErrorFieldsKeyReader(mpp::Dec<BUFFER>& d, Error& er) : dec(d), error(er) {}
+	ErrorFieldsKeyReader(mpp::Dec<BUFFER> &d, Error &er) : dec(d), error(er)
+	{}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, const mpp::StrValue& v)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   const mpp::StrValue &v)
 	{
-		//TODO: assert(strcmp(v, "custom_type", sizeof("custom_type");
-		(void) v;
-		using TypeNameReader_t = mpp::SimpleStrReader<BUFFER, sizeof(Error{}.type_name)>;
-		dec.SetReader(true, TypeNameReader_t{error.type_name, error.type_name_len});
+		// TODO: assert(strcmp(v, "custom_type", sizeof("custom_type");
+		(void)v;
+		using TypeNameReader_t =
+			mpp::SimpleStrReader<BUFFER,
+					     sizeof(Error {}.type_name)>;
+		dec.SetReader(true,
+			      TypeNameReader_t { error.type_name,
+						 error.type_name_len });
 	}
-	mpp::Dec<BUFFER>& dec;
-	Error& error;
+	mpp::Dec<BUFFER> &dec;
+	Error &error;
 };
 
 template <class BUFFER>
 struct ErrorFieldsReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_MAP> {
 
-	ErrorFieldsReader(mpp::Dec<BUFFER>& d, Error& er) : dec(d), error(er) {}
+	ErrorFieldsReader(mpp::Dec<BUFFER> &d, Error &er) : dec(d), error(er) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::MapValue)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   mpp::MapValue)
 	{
-		dec.SetReader(false, ErrorFieldsKeyReader<BUFFER>{dec, error});
+		dec.SetReader(false,
+			      ErrorFieldsKeyReader<BUFFER> { dec, error });
 	}
-	mpp::Dec<BUFFER>& dec;
-	Error& error;
+	mpp::Dec<BUFFER> &dec;
+	Error &error;
 };
 
 template <class BUFFER>
 struct ErrorKeyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_UINT> {
 
-	ErrorKeyReader(mpp::Dec<BUFFER>& d, Error& er) : dec(d), error(er) {}
+	ErrorKeyReader(mpp::Dec<BUFFER> &d, Error &er) : dec(d), error(er) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, uint64_t key)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type, uint64_t key)
 	{
-		using TypeNameReader_t = mpp::SimpleStrReader<BUFFER, sizeof(Error{}.type_name)>;
+		using TypeNameReader_t =
+			mpp::SimpleStrReader<BUFFER,
+					     sizeof(Error {}.type_name)>;
 		using Int_t = mpp::SimpleReader<BUFFER, mpp::MP_UINT, int>;
-		using FileReader_t = mpp::SimpleStrReader<BUFFER, sizeof(Error{}.file)>;
-		using MsgReader_t = mpp::SimpleStrReader<BUFFER, sizeof(Error{}.msg)>;
+		using FileReader_t =
+			mpp::SimpleStrReader<BUFFER, sizeof(Error {}.file)>;
+		using MsgReader_t =
+			mpp::SimpleStrReader<BUFFER, sizeof(Error {}.msg)>;
 		using FieldsReader_t = ErrorFieldsReader<BUFFER>;
-		//TODO: handle "access denied" and custom errors
+		// TODO: handle "access denied" and custom errors
 		switch (key) {
-			case Iproto::ERROR_TYPE: {
-				dec.SetReader(true, TypeNameReader_t{error.type_name, error.type_name_len});
-				break;
-			}
-			case Iproto::ERROR_LINE: {
-				dec.SetReader(true, Int_t{error.line});
-				break;
-			}
-			case Iproto::ERROR_FILE: {
-				dec.SetReader(true, FileReader_t{error.file, error.file_len});
-				break;
-			}
-			case Iproto::ERROR_MESSAGE: {
-				dec.SetReader(true, MsgReader_t{error.msg, error.msg_len});
-				break;
-			}
-			case Iproto::ERROR_ERRNO: {
-				dec.SetReader(true, Int_t{error.saved_errno});
-				break;
-			}
-			case Iproto::ERROR_CODE: {
-				dec.SetReader(true, Int_t{error.errcode});
-				break;
-			}
-			case Iproto::ERROR_FIELDS: {
-				dec.SetReader(true, FieldsReader_t{dec, error});
-				break;
-			}
-			default:
-				LOG_ERROR("Invalid error key: ", key);
-				dec.AbortAndSkipRead();
+		case Iproto::ERROR_TYPE: {
+			dec.SetReader(true,
+				      TypeNameReader_t { error.type_name,
+							 error.type_name_len });
+			break;
+		}
+		case Iproto::ERROR_LINE: {
+			dec.SetReader(true, Int_t { error.line });
+			break;
+		}
+		case Iproto::ERROR_FILE: {
+			dec.SetReader(
+				true,
+				FileReader_t { error.file, error.file_len });
+			break;
+		}
+		case Iproto::ERROR_MESSAGE: {
+			dec.SetReader(true,
+				      MsgReader_t { error.msg, error.msg_len });
+			break;
+		}
+		case Iproto::ERROR_ERRNO: {
+			dec.SetReader(true, Int_t { error.saved_errno });
+			break;
+		}
+		case Iproto::ERROR_CODE: {
+			dec.SetReader(true, Int_t { error.errcode });
+			break;
+		}
+		case Iproto::ERROR_FIELDS: {
+			dec.SetReader(true, FieldsReader_t { dec, error });
+			break;
+		}
+		default:
+			LOG_ERROR("Invalid error key: ", key);
+			dec.AbortAndSkipRead();
 		}
 	}
-	mpp::Dec<BUFFER>& dec;
-	Error& error;
+	mpp::Dec<BUFFER> &dec;
+	Error &error;
 };
 
 template <class BUFFER>
 struct ErrorArrayValueReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_MAP> {
 
-	ErrorArrayValueReader(mpp::Dec<BUFFER>& d, Error& er) : dec(d), error(er) {}
+	ErrorArrayValueReader(mpp::Dec<BUFFER> &d, Error &er)
+		: dec(d), error(er)
+	{}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::MapValue)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   mpp::MapValue)
 	{
-		dec.SetReader(false, ErrorKeyReader<BUFFER>{dec, error});
-
+		dec.SetReader(false, ErrorKeyReader<BUFFER> { dec, error });
 	}
-	mpp::Dec<BUFFER>& dec;
-	Error& error;
+	mpp::Dec<BUFFER> &dec;
+	Error &error;
 };
 
 template <class BUFFER>
 struct ErrorArrayReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_ARR> {
 
-	ErrorArrayReader(mpp::Dec<BUFFER>& d, ErrorStack& s) : dec(d), stack(s) {}
+	ErrorArrayReader(mpp::Dec<BUFFER> &d, ErrorStack &s) : dec(d), stack(s)
+	{}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::ArrValue v)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   mpp::ArrValue v)
 	{
 		stack.count = v.size;
 		assert(stack.count == 1);
-		dec.SetReader(false, ErrorArrayValueReader<BUFFER>{dec, stack.error});
+		dec.SetReader(
+			false,
+			ErrorArrayValueReader<BUFFER> { dec, stack.error });
 	}
-	mpp::Dec<BUFFER>& dec;
-	ErrorStack& stack;
+	mpp::Dec<BUFFER> &dec;
+	ErrorStack &stack;
 };
 
 template <class BUFFER>
 struct ErrorStackReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_UINT> {
 
-	ErrorStackReader(mpp::Dec<BUFFER>& d, ErrorStack& er) : dec(d), error(er) {}
+	ErrorStackReader(mpp::Dec<BUFFER> &d, ErrorStack &er)
+		: dec(d), error(er)
+	{}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, uint64_t key)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type, uint64_t key)
 	{
 		if (key != Iproto::ERROR_STACK) {
 			dec.AbortAndSkipRead();
 			return;
 		}
-		dec.SetReader(true, ErrorArrayReader<BUFFER>{dec, error});
+		dec.SetReader(true, ErrorArrayReader<BUFFER> { dec, error });
 	}
-	mpp::Dec<BUFFER>& dec;
-	ErrorStack& error;
+	mpp::Dec<BUFFER> &dec;
+	ErrorStack &error;
 };
 
 /**
@@ -343,66 +372,69 @@ struct ErrorStackReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_UINT> {
 template <class BUFFER>
 struct ErrorReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_MAP> {
 
-	ErrorReader(mpp::Dec<BUFFER>& d, ErrorStack& er) : dec(d), error(er) {}
+	ErrorReader(mpp::Dec<BUFFER> &d, ErrorStack &er) : dec(d), error(er) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::MapValue)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   mpp::MapValue)
 	{
-		dec.SetReader(false, ErrorStackReader<BUFFER>{dec, error});
-
+		dec.SetReader(false, ErrorStackReader<BUFFER> { dec, error });
 	}
-	mpp::Dec<BUFFER>& dec;
-	ErrorStack& error;
+	mpp::Dec<BUFFER> &dec;
+	ErrorStack &error;
 };
-
 
 template <class BUFFER>
 struct BodyKeyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_UINT> {
 
-	BodyKeyReader(mpp::Dec<BUFFER>& d, Body<BUFFER>& b) : dec(d), body(b) {}
+	BodyKeyReader(mpp::Dec<BUFFER> &d, Body<BUFFER> &b) : dec(d), body(b) {}
 
-	void Value(iterator_t<BUFFER>& itr, mpp::compact::Type, uint64_t key)
+	void Value(iterator_t<BUFFER> &itr, mpp::compact::Type, uint64_t key)
 	{
-		using Str_t = mpp::SimpleStrReader<BUFFER, sizeof(Error{}.msg)>;
+		using Str_t =
+			mpp::SimpleStrReader<BUFFER, sizeof(Error {}.msg)>;
 		using Err_t = ErrorReader<BUFFER>;
 		using Data_t = DataReader<BUFFER>;
 		switch (key) {
-			case Iproto::DATA: {
-				body.data = Data<BUFFER>(itr);
-				dec.SetReader(true, Data_t{dec, *body.data});
-				break;
-			}
-			case Iproto::ERROR_24: {
-				body.error_stack = ErrorStack();
-				dec.SetReader(true, Str_t{body.error_stack->error.msg,
-							  body.error_stack->error.msg_len});
-				break;
-			}
-			case Iproto::ERROR: {
-				/* ERROR_24 key must be parsed first. */
-				assert(body.error_stack != std::nullopt);
-				ErrorStack &error_stack = *body.error_stack;
-				dec.SetReader(true, Err_t{dec, error_stack});
-				break;
-			}
-			default:
-				LOG_ERROR("Invalid body key: ", key);
-				dec.AbortAndSkipRead();
+		case Iproto::DATA: {
+			body.data = Data<BUFFER>(itr);
+			dec.SetReader(true, Data_t { dec, *body.data });
+			break;
+		}
+		case Iproto::ERROR_24: {
+			body.error_stack = ErrorStack();
+			dec.SetReader(
+				true,
+				Str_t { body.error_stack->error.msg,
+					body.error_stack->error.msg_len });
+			break;
+		}
+		case Iproto::ERROR: {
+			/* ERROR_24 key must be parsed first. */
+			assert(body.error_stack != std::nullopt);
+			ErrorStack &error_stack = *body.error_stack;
+			dec.SetReader(true, Err_t { dec, error_stack });
+			break;
+		}
+		default:
+			LOG_ERROR("Invalid body key: ", key);
+			dec.AbortAndSkipRead();
 		}
 	}
-	mpp::Dec<BUFFER>& dec;
-	Body<BUFFER>& body;
+	mpp::Dec<BUFFER> &dec;
+	Body<BUFFER> &body;
 };
 
 template <class BUFFER>
 struct BodyReader : mpp::SimpleReaderBase<BUFFER, mpp::MP_MAP> {
 
-	BodyReader(mpp::Dec<BUFFER>& d, Body<BUFFER>& b) : dec(d), body(b) {}
+	BodyReader(mpp::Dec<BUFFER> &d, Body<BUFFER> &b) : dec(d), body(b) {}
 
-	void Value(const iterator_t<BUFFER>&, mpp::compact::Type, mpp::MapValue)
+	void Value(const iterator_t<BUFFER> &, mpp::compact::Type,
+		   mpp::MapValue)
 	{
-		dec.SetReader(false, BodyKeyReader{dec, body});
+		dec.SetReader(false, BodyKeyReader { dec, body });
 	}
 
-	mpp::Dec<BUFFER>& dec;
-	Body<BUFFER>& body;
+	mpp::Dec<BUFFER> &dec;
+	Body<BUFFER> &body;
 };

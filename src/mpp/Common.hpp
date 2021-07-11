@@ -37,41 +37,77 @@
 namespace mpp {
 
 template <class T, class _ = void>
-struct under_uint {  };
+struct under_uint {};
 
 template <class T>
-struct under_uint<T, std::enable_if_t<sizeof(T) == 1, void>> { using type = uint8_t; };
+struct under_uint<T, std::enable_if_t<sizeof(T) == 1, void>> {
+	using type = uint8_t;
+};
 template <class T>
-struct under_uint<T, std::enable_if_t<sizeof(T) == 2, void>> { using type = uint16_t; };
+struct under_uint<T, std::enable_if_t<sizeof(T) == 2, void>> {
+	using type = uint16_t;
+};
 template <class T>
-struct under_uint<T, std::enable_if_t<sizeof(T) == 4, void>> { using type = uint32_t; };
+struct under_uint<T, std::enable_if_t<sizeof(T) == 4, void>> {
+	using type = uint32_t;
+};
 template <class T>
-struct under_uint<T, std::enable_if_t<sizeof(T) == 8, void>> { using type = uint64_t; };
+struct under_uint<T, std::enable_if_t<sizeof(T) == 8, void>> {
+	using type = uint64_t;
+};
 
 template <class T>
 using under_uint_t = typename under_uint<T>::type;
 
 template <class T, class _ = void>
-struct under_int {  };
+struct under_int {};
 
 template <class T>
-struct under_int<T, std::enable_if_t<sizeof(T) == 1, void>> { using type = int8_t; };
+struct under_int<T, std::enable_if_t<sizeof(T) == 1, void>> {
+	using type = int8_t;
+};
 template <class T>
-struct under_int<T, std::enable_if_t<sizeof(T) == 2, void>> { using type = int16_t; };
+struct under_int<T, std::enable_if_t<sizeof(T) == 2, void>> {
+	using type = int16_t;
+};
 template <class T>
-struct under_int<T, std::enable_if_t<sizeof(T) == 4, void>> { using type = int32_t; };
+struct under_int<T, std::enable_if_t<sizeof(T) == 4, void>> {
+	using type = int32_t;
+};
 template <class T>
-struct under_int<T, std::enable_if_t<sizeof(T) == 8, void>> { using type = int64_t; };
+struct under_int<T, std::enable_if_t<sizeof(T) == 8, void>> {
+	using type = int64_t;
+};
 
 template <class T>
 using under_int_t = typename under_int<T>::type;
 
-inline uint8_t  bswap(uint8_t x)  { return x; }
-inline uint16_t bswap(uint16_t x) { return __builtin_bswap16(x); }
-inline uint32_t bswap(uint32_t x) { return __builtin_bswap32(x); }
-inline uint64_t bswap(uint64_t x) { return __builtin_bswap64(x); }
+inline uint8_t
+bswap(uint8_t x)
+{
+	return x;
+}
+inline uint16_t
+bswap(uint16_t x)
+{
+	return __builtin_bswap16(x);
+}
+inline uint32_t
+bswap(uint32_t x)
+{
+	return __builtin_bswap32(x);
+}
+inline uint64_t
+bswap(uint64_t x)
+{
+	return __builtin_bswap64(x);
+}
 
-
-[[noreturn]] inline void unreachable() { assert(false); __builtin_unreachable(); }
+[[noreturn]] inline void
+unreachable()
+{
+	assert(false);
+	__builtin_unreachable();
+}
 
 } // namespace mpp {

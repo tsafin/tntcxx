@@ -60,7 +60,7 @@ template <size_t S, size_t MAX_COUNT>
 struct Allocations {
 	Allocation<S> all[MAX_COUNT];
 	size_t count = 0;
-	Allocation<S>& operator[](size_t i) { return all[i]; }
+	Allocation<S> &operator[](size_t i) { return all[i]; }
 	void add(char *alloc_ptr) { all[count++].assign(alloc_ptr); }
 	bool are_valid() const
 	{
@@ -77,8 +77,7 @@ struct Allocations {
 	}
 };
 
-
-template<size_t S>
+template <size_t S>
 void
 test_default()
 {
@@ -106,8 +105,7 @@ test_default()
 	fail_unless(bc == SIZE_MAX && sc == SIZE_MAX);
 }
 
-
-template<size_t S, size_t M>
+template <size_t S, size_t M>
 void
 test_instance()
 {
@@ -161,7 +159,7 @@ test_instance()
 	}
 }
 
-template<size_t S, size_t M>
+template <size_t S, size_t M>
 void
 test_holder()
 {
@@ -204,7 +202,7 @@ test_holder()
 	fail_unless(mh5.statBlockCount() == 0);
 }
 
-template<size_t S, size_t M>
+template <size_t S, size_t M>
 void
 test_static()
 {
@@ -228,7 +226,7 @@ test_static()
 	fail_unless(mp_t::defaultInstance().statBlockCount() == 0);
 }
 
-template<size_t S, size_t M>
+template <size_t S, size_t M>
 void
 test_alignment()
 {
@@ -247,7 +245,8 @@ test_alignment()
 	}
 }
 
-int main()
+int
+main()
 {
 	test_default<8>();
 	test_default<64>();

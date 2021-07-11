@@ -36,8 +36,8 @@
 #include <type_traits>
 #include <variant>
 
-#include "Types.hpp"
 #include "Constants.hpp"
+#include "Types.hpp"
 
 namespace mpp {
 /**
@@ -64,35 +64,35 @@ constexpr bool always_false_v = false;
  * if constexpr (is_a_v<U>) ...
  *
  */
-#define MPP_DEFINE_TYPE_CHECKER(id_name, class_name) \
-template <class T> \
-struct id_name##_helper : std::false_type {}; \
-\
-template <class... T> \
-struct id_name##_helper<class_name<T...>> : std::true_type {}; \
-\
-template <class T> \
-constexpr bool id_name = id_name##_helper<T>::value
+#define MPP_DEFINE_TYPE_CHECKER(id_name, class_name)                           \
+	template <class T>                                                     \
+	struct id_name##_helper : std::false_type {};                          \
+                                                                               \
+	template <class... T>                                                  \
+	struct id_name##_helper<class_name<T...>> : std::true_type {};         \
+                                                                               \
+	template <class T>                                                     \
+	constexpr bool id_name = id_name##_helper<T>::value
 
-#define MPP_DEFINE_TYPE_CHECKER_V(id_name, class_name) \
-template <class T> \
-struct id_name##_helper : std::false_type {}; \
-\
-template <class T, T... V> \
-struct id_name##_helper<class_name<V...>> : std::true_type {}; \
-\
-template <class T> \
-constexpr bool id_name = id_name##_helper<T>::value
+#define MPP_DEFINE_TYPE_CHECKER_V(id_name, class_name)                         \
+	template <class T>                                                     \
+	struct id_name##_helper : std::false_type {};                          \
+                                                                               \
+	template <class T, T... V>                                             \
+	struct id_name##_helper<class_name<V...>> : std::true_type {};         \
+                                                                               \
+	template <class T>                                                     \
+	constexpr bool id_name = id_name##_helper<T>::value
 
-#define MPP_DEFINE_TYPE_CHECKER_TV(id_name, class_name) \
-template <class T> \
-struct id_name##_helper : std::false_type {}; \
-\
-template <class T, class U, U V> \
-struct id_name##_helper<class_name<T, V>> : std::true_type {}; \
-\
-template <class T> \
-constexpr bool id_name = id_name##_helper<T>::value
+#define MPP_DEFINE_TYPE_CHECKER_TV(id_name, class_name)                        \
+	template <class T>                                                     \
+	struct id_name##_helper : std::false_type {};                          \
+                                                                               \
+	template <class T, class U, U V>                                       \
+	struct id_name##_helper<class_name<T, V>> : std::true_type {};         \
+                                                                               \
+	template <class T>                                                     \
+	constexpr bool id_name = id_name##_helper<T>::value
 
 /** Type checkers for types defined in Types.hpp. */
 MPP_DEFINE_TYPE_CHECKER(is_str_v, str_holder);
@@ -131,14 +131,12 @@ constexpr bool is_range_v = is_range_v_helper<T>::value;
 
 /** Extractor of type of std::integral constant. */
 template <class T>
-struct const_value_type_helper
-{
+struct const_value_type_helper {
 	using type = void;
 };
 
 template <class T, T V>
-struct const_value_type_helper<std::integral_constant<T, V>>
-{
+struct const_value_type_helper<std::integral_constant<T, V>> {
 	using type = typename std::integral_constant<T, V>::value_type;
 };
 
@@ -148,34 +146,34 @@ using const_value_type = typename const_value_type_helper<T>::type;
 /** Type checkers of std::integral constant of a specific type. */
 template <class T>
 constexpr bool is_const_b =
-	is_const_v<T> && std::is_same_v<const_value_type<T>, bool>;
+	is_const_v<T> &&std::is_same_v<const_value_type<T>, bool>;
 template <class T>
 constexpr bool is_const_f =
-	is_const_v<T> && std::is_same_v<const_value_type<T>, float>;
+	is_const_v<T> &&std::is_same_v<const_value_type<T>, float>;
 template <class T>
 constexpr bool is_const_d =
-	is_const_v<T> && std::is_same_v<const_value_type<T>, double>;
+	is_const_v<T> &&std::is_same_v<const_value_type<T>, double>;
 template <class T>
 constexpr bool is_const_s =
-	is_const_v<T> && std::is_integral_v<const_value_type<T>> &&
-	std::is_signed_v<const_value_type<T>> && !is_const_b<T>;
+	is_const_v<T> &&std::is_integral_v<const_value_type<T>>
+		&&std::is_signed_v<const_value_type<T>> && !is_const_b<T>;
 template <class T>
 constexpr bool is_const_u =
-	is_const_v<T> && std::is_integral_v<const_value_type<T>> &&
-	std::is_unsigned_v<const_value_type<T>> && !is_const_b<T>;
+	is_const_v<T> &&std::is_integral_v<const_value_type<T>>
+		&&std::is_unsigned_v<const_value_type<T>> && !is_const_b<T>;
 template <class T>
-constexpr bool is_const_e =
-	is_const_v<T> && std::is_enum_v<const_value_type<T>>;
+constexpr bool is_const_e = is_const_v<T> &&std::is_enum_v<const_value_type<T>>;
 
 /**
  * Group checker of str, bin, arr and map.
  */
 template <class T>
 constexpr bool is_simple_spec_v =
-	is_str_v < T > || is_bin_v < T > || is_arr_v < T > || is_map_v<T>;
+	is_str_v<T> || is_bin_v<T> || is_arr_v<T> || is_map_v<T>;
 
 template <class T>
-constexpr compact::Type get_simple_type() noexcept
+constexpr compact::Type
+get_simple_type() noexcept
 {
 	if constexpr (is_str_v<T>)
 		return compact::MP_STR;
@@ -204,14 +202,11 @@ template <class T, class _ = void>
 struct looks_like_arr : std::false_type {};
 
 template <class T>
-struct looks_like_arr<
-	T,
-	std::void_t<
-		decltype(*std::cbegin(std::declval<T>())),
-		decltype(*std::cend(std::declval<T>())),
-		decltype(std::size(std::declval<T>()))
-	>
-> : std::true_type {};
+struct looks_like_arr<T,
+		      std::void_t<decltype(*std::cbegin(std::declval<T>())),
+				  decltype(*std::cend(std::declval<T>())),
+				  decltype(std::size(std::declval<T>()))>>
+	: std::true_type {};
 
 template <class T>
 constexpr bool looks_like_arr_v = looks_like_arr<T>::value;
@@ -228,13 +223,11 @@ struct looks_like_map : std::false_type {};
 template <class T>
 struct looks_like_map<
 	T,
-	std::void_t<
-		decltype(std::cbegin(std::declval<T>())->first),
-		decltype(std::cbegin(std::declval<T>())->second),
-		decltype(std::cend(std::declval<T>())),
-		decltype(std::size(std::declval<T>()))
-	>
-> : std::true_type {};
+	std::void_t<decltype(std::cbegin(std::declval<T>())->first),
+		    decltype(std::cbegin(std::declval<T>())->second),
+		    decltype(std::cend(std::declval<T>())),
+		    decltype(std::size(std::declval<T>()))>> : std::true_type {
+};
 
 template <class T>
 constexpr bool looks_like_map_v = looks_like_map<T>::value;
@@ -250,13 +243,10 @@ template <class T, class _ = void>
 struct looks_like_str : std::false_type {};
 
 template <class T>
-struct looks_like_str<
-	T,
-	std::void_t<
-		decltype(*std::data(std::declval<T&>())),
-		decltype(std::size(std::declval<T&>()))
-	>
-> : is_cvref_char<decltype(*std::data(std::declval<T&>()))> {};
+struct looks_like_str<T,
+		      std::void_t<decltype(*std::data(std::declval<T &>())),
+				  decltype(std::size(std::declval<T &>()))>>
+	: is_cvref_char<decltype(*std::data(std::declval<T &>()))> {};
 
 template <class T>
 constexpr bool looks_like_str_v = looks_like_str<T>::value;
@@ -275,28 +265,29 @@ template <class T>
 struct has_fixed_size : std::false_type {};
 
 template <class... T>
-struct has_fixed_size<std::tuple<T...>> : std::true_type
-{ static constexpr size_t size = sizeof...(T); };
+struct has_fixed_size<std::tuple<T...>> : std::true_type {
+	static constexpr size_t size = sizeof...(T);
+};
 
 template <class T, size_t N>
-struct has_fixed_size<std::array<T, N>> : std::true_type
-{ static constexpr size_t size = N; };
+struct has_fixed_size<std::array<T, N>> : std::true_type {
+	static constexpr size_t size = N;
+};
 
 template <class T, size_t N>
-struct has_fixed_size<T[N]> : std::true_type
-{ static constexpr size_t size = N; };
+struct has_fixed_size<T[N]> : std::true_type {
+	static constexpr size_t size = N;
+};
 
 template <class T1, class T2, bool IS_FIXED_SIZE, size_t N>
 struct has_fixed_size<IteratorRange<T1, T2, IS_FIXED_SIZE, N>>
- : std::bool_constant<IS_FIXED_SIZE>
-{
+	: std::bool_constant<IS_FIXED_SIZE> {
 	static constexpr size_t size = N;
 };
 
 template <class T1, class T2, bool IS_FIXED_SIZE, size_t N>
 struct has_fixed_size<ContiguousRange<T1, T2, IS_FIXED_SIZE, N>>
- : std::bool_constant<IS_FIXED_SIZE>
-{
+	: std::bool_constant<IS_FIXED_SIZE> {
 	static constexpr size_t size = N;
 };
 
@@ -313,37 +304,34 @@ template <class T, class _ = void>
 struct has_data_member : std::false_type {};
 
 template <class T>
-struct has_data_member<
-	T,
-	std::void_t<
-		decltype(*std::data(std::declval<T&>()))
-	>
-> : std::true_type {};
+struct has_data_member<T,
+		       std::void_t<decltype(*std::data(std::declval<T &>()))>>
+	: std::true_type {};
 
 template <class T>
 constexpr bool has_data_member_v = has_data_member<T>::value;
 
 template <class T>
-constexpr bool is_get_invokable_v =
-	has_fixed_size_v<T> &&
+constexpr bool is_get_invokable_v = has_fixed_size_v<T> &&
 	(has_data_member_v<T> || std::is_array_v<T> || is_tuple_v<T>);
 
 template <size_t I, class T, size_t N>
-constexpr const T& get(const T (&a)[N]) noexcept
+constexpr const T &
+get(const T (&a)[N]) noexcept
 {
 	return a[I];
 }
 
 template <size_t I, class... T>
-const typename std::tuple_element<I, const std::tuple<T...>>::type&
-get(const std::tuple<T...>& t) noexcept
+const typename std::tuple_element<I, const std::tuple<T...>>::type &
+get(const std::tuple<T...> &t) noexcept
 {
 	return std::get<I>(t);
 }
 
 template <size_t I, class T>
 decltype(auto)
-get(const T& t) noexcept
+get(const T &t) noexcept
 {
 	return t.data()[I];
 }
@@ -354,11 +342,11 @@ get(const T& t) noexcept
 template <class T>
 struct extractor {
 	static constexpr bool is_static = false;
-	const T& t;
+	const T &t;
 	using iter_t = std::decay_t<decltype(std::begin(t))>;
 	iter_t itr;
-	extractor(const T& a) : t(a), itr(std::begin(t)) {}
-	extractor(const T& a, iter_t prev) : t(a), itr(prev) { ++itr; }
+	extractor(const T &a) : t(a), itr(std::begin(t)) {}
+	extractor(const T &a, iter_t prev) : t(a), itr(prev) { ++itr; }
 	bool has() const { return itr != std::end(t); }
 	auto get() const { return *itr; }
 	extractor next() const { return extractor(t, itr); }
@@ -367,20 +355,21 @@ struct extractor {
 template <size_t I, size_t N, class T>
 struct static_extractor {
 	static constexpr bool is_static = true;
-	const T& t;
-	static_extractor(const T& a) : t(a) {}
+	const T &t;
+	static_extractor(const T &a) : t(a) {}
 	static constexpr bool has() { return I != N; }
 	auto get() const { return std::get<I>(t); }
-	static_extractor<I+1, N, T> next() const { return {t}; }
+	static_extractor<I + 1, N, T> next() const { return { t }; }
 };
 
 template <class T>
-auto get_extractor(const T& t)
+auto
+get_extractor(const T &t)
 {
 	if constexpr (is_get_invokable_v<T>) {
-		return static_extractor<0, get_fixed_size_v<T>, T>{t};
+		return static_extractor<0, get_fixed_size_v<T>, T> { t };
 	} else {
-		return extractor<T>{t};
+		return extractor<T> { t };
 	}
 }
 
@@ -388,7 +377,8 @@ auto get_extractor(const T& t)
  * Get
  */
 template <class T>
-constexpr size_t power_v()
+constexpr size_t
+power_v()
 {
 	if constexpr (sizeof(T) == 1)
 		return 0;

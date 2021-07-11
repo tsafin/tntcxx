@@ -49,35 +49,36 @@ template <class BUFFER>
 struct ReaderTemplate : DefaultErrorHandler {
 	static constexpr Type VALID_TYPES = MP_ANY;
 	template <class T>
-	void Value(const typename BUFFER::iterator&, compact::Type, T&&) {}
-	typename BUFFER::iterator* StoreEndIterator() { return nullptr; }
+	void Value(const typename BUFFER::iterator &, compact::Type, T &&)
+	{}
+	typename BUFFER::iterator *StoreEndIterator() { return nullptr; }
 };
 
 template <class BUFFER, Type TYPE>
 struct SimpleReaderBase : DefaultErrorHandler {
 	using BufferIterator_t = typename BUFFER::iterator;
 	static constexpr Type VALID_TYPES = TYPE;
-	BufferIterator_t* StoreEndIterator() { return nullptr; }
+	BufferIterator_t *StoreEndIterator() { return nullptr; }
 };
 
 template <class BUFFER, Type TYPE, class T>
 struct SimpleReader : SimpleReaderBase<BUFFER, TYPE> {
 	using BufferIterator_t = typename BUFFER::iterator;
-	explicit SimpleReader(T& t) : value(t) {}
+	explicit SimpleReader(T &t) : value(t) {}
 	template <class U>
-	void Value(const BufferIterator_t&, compact::Type, U&& u)
+	void Value(const BufferIterator_t &, compact::Type, U &&u)
 	{
 		// A check may be required here.
 		value = u;
 	}
-	T& value;
+	T &value;
 };
 
 template <class BUFFER, size_t MAX_SIZE>
 struct SimpleStrReader : SimpleReaderBase<BUFFER, MP_STR> {
 	using BufferIterator_t = typename BUFFER::iterator;
 	SimpleStrReader(char *dst, size_t &size) : m_Dst(dst), m_Size(size) {}
-	void Value(BufferIterator_t& itr, compact::Type, const StrValue& v)
+	void Value(BufferIterator_t &itr, compact::Type, const StrValue &v)
 	{
 		m_Size = v.size;
 		size_t read_size = std::min(MAX_SIZE, m_Size);
@@ -89,7 +90,7 @@ struct SimpleStrReader : SimpleReaderBase<BUFFER, MP_STR> {
 		}
 	}
 	char *m_Dst;
-	size_t& m_Size;
+	size_t &m_Size;
 };
 
 template <class BUFFER, size_t MAX_SIZE, Type TYPE, class T>
@@ -97,7 +98,7 @@ struct SimpleArrDataReader : SimpleReaderBase<BUFFER, TYPE> {
 	using BufferIterator_t = typename BUFFER::iterator;
 	explicit SimpleArrDataReader(T *dst) : m_Dst(dst) {}
 	template <class U>
-	void Value(const BufferIterator_t&, compact::Type, U&& u)
+	void Value(const BufferIterator_t &, compact::Type, U &&u)
 	{
 		if (m_I >= MAX_SIZE)
 			return;
@@ -110,18 +111,19 @@ struct SimpleArrDataReader : SimpleReaderBase<BUFFER, TYPE> {
 template <class DEC, class BUFFER, size_t MAX_SIZE, Type TYPE, class T>
 struct SimpleArrReader : SimpleReaderBase<BUFFER, MP_ARR> {
 	using BufferIterator_t = typename BUFFER::iterator;
-	SimpleArrReader(DEC& dec, T *dst, size_t &size)
-		: m_Dec(dec), m_Dst(dst), m_Size(size) {}
-	void Value(const BufferIterator_t&, compact::Type, ArrValue v)
+	SimpleArrReader(DEC &dec, T *dst, size_t &size)
+		: m_Dec(dec), m_Dst(dst), m_Size(size)
+	{}
+	void Value(const BufferIterator_t &, compact::Type, ArrValue v)
 	{
 		m_Size = std::min(MAX_SIZE, (size_t)v.size);
 		using Reader_t = SimpleArrDataReader<BUFFER, MAX_SIZE, TYPE, T>;
-		m_Dec.SetReader(false, Reader_t{m_Dst});
+		m_Dec.SetReader(false, Reader_t { m_Dst });
 	}
 
-	DEC& m_Dec;
+	DEC &m_Dec;
 	T *m_Dst;
-	size_t& m_Size;
+	size_t &m_Size;
 };
 
 template <class BUFFER>
@@ -135,7 +137,7 @@ public:
 	static constexpr size_t MAX_DEPTH = 16;
 	static constexpr size_t MAX_READER_SIZE = 32;
 
-	using Transition_t = void(Dec_t::*)();
+	using Transition_t = void (Dec_t::*)();
 	struct State {
 		const Transition_t *transitions;
 		BufferIterator_t *storeEndIterator;
@@ -151,22 +153,21 @@ private:
 	Level m_Levels[MAX_DEPTH];
 	Level *m_CurLevel = m_Levels;
 
-	template<class READER, class... ARGS>
-	void FillState(State &st, ARGS&&... args);
+	template <class READER, class... ARGS>
+	void FillState(State &st, ARGS &&...args);
 	void FillSkipState(State &st, BufferIterator_t *save_end = nullptr);
 
 public:
-	explicit Dec(Buffer_t &buf)
-		: m_Buf(buf), m_Cur(m_Buf.begin())
+	explicit Dec(Buffer_t &buf) : m_Buf(buf), m_Cur(m_Buf.begin())
 	{
-		for (auto& l : m_Levels)
+		for (auto &l : m_Levels)
 			l.countdown = l.stateMask = 0;
 	}
 
 	template <class T, class... U>
-	void SetReader(bool second, U&&... u);
+	void SetReader(bool second, U &&...u);
 	template <class T>
-	void SetReader(bool second, T&& t);
+	void SetReader(bool second, T &&t);
 	void Skip(BufferIterator_t *saveEnd = nullptr);
 	void SetPosition(BufferIterator_t &itr);
 	BufferIterator_t getPosition() { return m_Cur; }
@@ -176,10 +177,18 @@ public:
 	inline void AbortAndSkipRead(ReadResult_t error = READ_ABORTED_BY_USER);
 	inline void AbandonDecoder(ReadResult_t error = READ_ABORTED_BY_USER);
 
-	State& CurState() { return m_CurLevel->state[m_CurLevel->countdown & m_CurLevel->stateMask]; }
-	State& LastState() { return m_CurLevel->state[(1 ^ m_CurLevel->countdown) & m_CurLevel->stateMask]; }
-	State& FirstState() { return m_CurLevel->state[0]; }
-	State& SecondState() { return m_CurLevel->state[1]; }
+	State &CurState()
+	{
+		return m_CurLevel
+			->state[m_CurLevel->countdown & m_CurLevel->stateMask];
+	}
+	State &LastState()
+	{
+		return m_CurLevel->state[(1 ^ m_CurLevel->countdown) &
+					 m_CurLevel->stateMask];
+	}
+	State &FirstState() { return m_CurLevel->state[0]; }
+	State &SecondState() { return m_CurLevel->state[1]; }
 
 	template <class DEC, class READER, class SEQUENCE>
 	friend struct ReaderMap;
@@ -214,9 +223,8 @@ private:
 
 	inline void SkipCommon();
 
-
 private:
-	Buffer_t& m_Buf;
+	Buffer_t &m_Buf;
 	BufferIterator_t m_Cur;
 	bool m_IsDeadStream = false;
 	ReadResult_t m_Result = READ_SUCCESS;
@@ -235,7 +243,7 @@ Dec<BUFFER>::ReadNil()
 	assert(m_Buf.template get<uint8_t>(m_Cur) == 0xc0);
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_NIL;
 	[[maybe_unused]] constexpr Type type = MP_NIL;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	--m_CurLevel->countdown;
 	if constexpr ((READER::VALID_TYPES & type) == MP_NONE) {
@@ -264,7 +272,7 @@ Dec<BUFFER>::ReadBool()
 	assert((m_Buf.template get<uint8_t>(m_Cur) & 0xfe) == 0xc2);
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_BOOL;
 	[[maybe_unused]] constexpr Type type = MP_BOOL;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	--m_CurLevel->countdown;
 	if constexpr ((READER::VALID_TYPES & type) == MP_NONE) {
@@ -287,11 +295,11 @@ Dec<BUFFER>::ReadUint()
 	} else {
 		assert((m_Buf.template get<uint8_t>(m_Cur) & 0xfc) == 0xcc);
 		assert(sizeof(T) ==
-			(1u << (m_Buf.template get<uint8_t>(m_Cur) - 0xcc)));
+		       (1u << (m_Buf.template get<uint8_t>(m_Cur) - 0xcc)));
 	}
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_UINT;
 	[[maybe_unused]] constexpr Type type = MP_UINT;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	if constexpr (!std::is_same_v<T, void>) {
 		if (!m_Buf.has(m_Cur, header_size<T>)) {
@@ -330,11 +338,11 @@ Dec<BUFFER>::ReadInt()
 	} else {
 		assert((m_Buf.template get<uint8_t>(m_Cur) & 0xfc) == 0xd0);
 		assert(sizeof(T) ==
-			(1u << (m_Buf.template get<uint8_t>(m_Cur) - 0xd0)));
+		       (1u << (m_Buf.template get<uint8_t>(m_Cur) - 0xd0)));
 	}
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_INT;
 	[[maybe_unused]] constexpr Type type = MP_INT;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	if constexpr (!std::is_same_v<T, void>) {
 		if (!m_Buf.has(m_Cur, header_size<T>)) {
@@ -371,11 +379,12 @@ void
 Dec<BUFFER>::ReadFlt()
 {
 	assert((m_Buf.template get<uint8_t>(m_Cur) & 0xfe) == 0xca);
-	assert(sizeof(T) == (4u << ((m_Buf.template get<uint8_t>(m_Cur))&1)));
+	assert(sizeof(T) == (4u << ((m_Buf.template get<uint8_t>(m_Cur)) & 1)));
 	[[maybe_unused]] constexpr compact::Type ctype =
 		sizeof(T) == 4 ? compact::MP_FLT : compact::MP_DBL;
-	[[maybe_unused]] constexpr Type type = sizeof(T) == 4 ? MP_FLT : MP_DBL;;
-	READER& r = CurState().objHolder.template get<READER>();
+	[[maybe_unused]] constexpr Type type = sizeof(T) == 4 ? MP_FLT : MP_DBL;
+	;
+	READER &r = CurState().objHolder.template get<READER>();
 
 	if (!m_Buf.has(m_Cur, header_size<T>)) {
 		m_Result = m_Result | READ_NEED_MORE;
@@ -412,7 +421,7 @@ Dec<BUFFER>::ReadStr()
 	}
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_STR;
 	[[maybe_unused]] constexpr Type type = MP_STR;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	if constexpr (!std::is_same_v<T, void>) {
 		if (!m_Buf.has(m_Cur, header_size<T>)) {
@@ -438,7 +447,7 @@ Dec<BUFFER>::ReadStr()
 		r.WrongType(READER::VALID_TYPES, type);
 		AbortAndSkipRead(READ_WRONG_TYPE);
 	} else {
-		r.Value(m_Cur, ctype, StrValue{header_size<T>, str_size});
+		r.Value(m_Cur, ctype, StrValue { header_size<T>, str_size });
 	}
 	m_Cur += header_size<T> + str_size;
 }
@@ -451,14 +460,14 @@ Dec<BUFFER>::ReadZeroStr()
 	assert((m_Buf.template get<uint8_t>(m_Cur) & 0xe0) == 0xa0);
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_STR;
 	[[maybe_unused]] constexpr Type type = MP_STR;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	--m_CurLevel->countdown;
 	if constexpr ((READER::VALID_TYPES & type) == MP_NONE) {
 		r.WrongType(READER::VALID_TYPES, type);
 		AbortAndSkipRead(READ_WRONG_TYPE);
 	} else {
-		r.Value(m_Cur, ctype, StrValue{1, 0});
+		r.Value(m_Cur, ctype, StrValue { 1, 0 });
 	}
 	++m_Cur;
 }
@@ -473,7 +482,7 @@ Dec<BUFFER>::ReadBin()
 	assert(sizeof(T) == (1 << (m_Buf.template get<uint8_t>(m_Cur) - 0xc4)));
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_BIN;
 	[[maybe_unused]] constexpr Type type = MP_BIN;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	if constexpr (!std::is_same_v<T, void>) {
 		if (!m_Buf.has(m_Cur, header_size<T>)) {
@@ -495,7 +504,7 @@ Dec<BUFFER>::ReadBin()
 		r.WrongType(READER::VALID_TYPES, type);
 		AbortAndSkipRead(READ_WRONG_TYPE);
 	} else {
-		r.Value(m_Cur, ctype, BinValue{header_size<T>, bin_size});
+		r.Value(m_Cur, ctype, BinValue { header_size<T>, bin_size });
 	}
 	m_Cur += header_size<T> + bin_size;
 }
@@ -514,7 +523,7 @@ Dec<BUFFER>::ReadArr()
 	}
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_ARR;
 	[[maybe_unused]] constexpr Type type = MP_ARR;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	if constexpr (!std::is_same_v<T, void>) {
 		if (!m_Buf.has(m_Cur, header_size<T>)) {
@@ -547,7 +556,7 @@ Dec<BUFFER>::ReadArr()
 			m_CurLevel->countdown = arr_size;
 			m_CurLevel->stateMask = 0;
 			r.Value(m_Cur, ctype,
-				ArrValue{header_size<T>, arr_size});
+				ArrValue { header_size<T>, arr_size });
 		}
 	}
 	if constexpr (std::is_same_v<T, void>)
@@ -570,7 +579,7 @@ Dec<BUFFER>::ReadMap()
 	}
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_MAP;
 	[[maybe_unused]] constexpr Type type = MP_MAP;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	if constexpr (!std::is_same_v<T, void>) {
 		if (!m_Buf.has(m_Cur, header_size<T>)) {
@@ -603,7 +612,7 @@ Dec<BUFFER>::ReadMap()
 			m_CurLevel->countdown = 2 * size_t(map_size);
 			m_CurLevel->stateMask = 1;
 			r.Value(m_Cur, ctype,
-				MapValue{header_size<T>, map_size});
+				MapValue { header_size<T>, map_size });
 		}
 	}
 	if constexpr (std::is_same_v<T, void>)
@@ -622,7 +631,7 @@ Dec<BUFFER>::ReadExt()
 	assert(sizeof(T) == (1 << (m_Buf.template get<uint8_t>(m_Cur) - 0xc7)));
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_EXT;
 	[[maybe_unused]] constexpr Type type = MP_EXT;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	constexpr size_t header_size = 2 + sizeof(T);
 	if (!m_Buf.has(m_Cur, header_size)) {
@@ -645,7 +654,7 @@ Dec<BUFFER>::ReadExt()
 	} else {
 		int8_t ext_type = m_Buf.template get<int8_t>(step);
 		r.Value(m_Cur, ctype,
-			ExtValue{ext_type, header_size, ext_size});
+			ExtValue { ext_type, header_size, ext_size });
 	}
 	m_Cur += header_size + ext_size;
 }
@@ -660,7 +669,7 @@ Dec<BUFFER>::ReadFixedExt()
 	assert(SIZE == (1 << (m_Buf.template get<uint8_t>(m_Cur) - 0xd4)));
 	[[maybe_unused]] constexpr compact::Type ctype = compact::MP_EXT;
 	[[maybe_unused]] constexpr Type type = MP_EXT;
-	READER& r = CurState().objHolder.template get<READER>();
+	READER &r = CurState().objHolder.template get<READER>();
 
 	constexpr size_t header_size = 2;
 	if (!m_Buf.has(m_Cur, header_size + SIZE)) {
@@ -676,78 +685,304 @@ Dec<BUFFER>::ReadFixedExt()
 	} else {
 		++step;
 		int8_t ext_type = m_Buf.template get<int8_t>(step);
-		r.Value(m_Cur, ctype,
-			ExtValue{ext_type, header_size, SIZE});
+		r.Value(m_Cur, ctype, ExtValue { ext_type, header_size, SIZE });
 	}
 	m_Cur += header_size + SIZE;
 }
 
 namespace details {
 
-struct TagInfo {
-	uint8_t header_size : 6;
-	uint8_t read_value_size : 2;
-	uint8_t read_value_str_like : 1;
-	uint8_t add_count : 5;
-	uint8_t read_value_arr_map : 2;
+	struct TagInfo {
+		uint8_t header_size : 6;
+		uint8_t read_value_size : 2;
+		uint8_t read_value_str_like : 1;
+		uint8_t add_count : 5;
+		uint8_t read_value_arr_map : 2;
 
-	constexpr TagInfo(uint8_t a = 1, uint8_t b = 0, uint8_t c = 0,
-			  uint8_t d = 0, uint8_t e = 0)
-		: header_size(a), read_value_size(b), read_value_str_like(c),
-		  add_count(d), read_value_arr_map(e)
-	{}
-};
+		constexpr TagInfo(uint8_t a = 1, uint8_t b = 0, uint8_t c = 0,
+				  uint8_t d = 0, uint8_t e = 0)
+			: header_size(a)
+			, read_value_size(b)
+			, read_value_str_like(c)
+			, add_count(d)
+			, read_value_arr_map(e)
+		{}
+	};
 
-static constexpr TagInfo tag_info[] = {
-	// fixed uint x 128
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	// fix map x 16
-	{1, 0, 0,  0}, {1, 0, 0,  2}, {1, 0, 0,  4}, {1, 0, 0,  6},
-	{1, 0, 0,  8}, {1, 0, 0, 10}, {1, 0, 0, 12}, {1, 0, 0, 14},
-	{1, 0, 0, 16}, {1, 0, 0, 18}, {1, 0, 0, 20}, {1, 0, 0, 22},
-	{1, 0, 0, 24}, {1, 0, 0, 26}, {1, 0, 0, 28}, {1, 0, 0, 30},
-	// fix arr x 16
-	{1, 0, 0,  0}, {1, 0, 0,  1}, {1, 0, 0,  2}, {1, 0, 0,  3},
-	{1, 0, 0,  4}, {1, 0, 0,  5}, {1, 0, 0,  6}, {1, 0, 0,  7},
-	{1, 0, 0,  8}, {1, 0, 0,  9}, {1, 0, 0, 10}, {1, 0, 0, 11},
-	{1, 0, 0, 12}, {1, 0, 0, 13}, {1, 0, 0, 14}, {1, 0, 0, 15},
-	// fix str x 32
-	{ 1}, { 2}, { 3}, { 4}, { 5}, { 6}, { 7}, { 8}, { 9}, {10},
-	{11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20},
-	{21}, {22}, {23}, {24}, {25}, {26}, {27}, {28}, {29}, {30},
-	{31}, {32},
-	// nil bas bool x 2
-	{1},{1},{1},{1},
-	// bin8 bin16 bin32
-	{1+1, 1, 1}, {1+2, 2, 1}, {1+4, 3, 1},
-	// ext8 ext16 ext32
-	{2+1, 1, 1}, {2+2, 2, 1}, {2+4, 3, 1},
-	// float double
-	{1+4}, {1+8},
-	// uint 8 - 64
-	{1+1}, {1+2}, {1+4}, {1+8},
-	// int 8 - 64
-	{1+1}, {1+2}, {1+4}, {1+8},
-	// fixext 1-16
-	{2+1}, {2+2}, {2+4}, {2+8}, {2+16},
-	// str8 str16 str32
-	{1+1, 1, 1}, {1+2, 2, 1}, {1+4, 3, 1},
-	// arr16 arr32
-	{1+2, 2, 0, 0, 1}, {1+4, 3, 0, 0, 1},
-	// map16 map32
-	{1+2, 2, 0, 0, 2}, {1+4, 3, 0, 0, 2},
-	// fix int x 32
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-	{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},
-};
-static_assert(std::size(tag_info) == 256, "Smth was missed?");
+	static constexpr TagInfo tag_info[] = {
+		// fixed uint x 128
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		// fix map x 16
+		{ 1, 0, 0, 0 },
+		{ 1, 0, 0, 2 },
+		{ 1, 0, 0, 4 },
+		{ 1, 0, 0, 6 },
+		{ 1, 0, 0, 8 },
+		{ 1, 0, 0, 10 },
+		{ 1, 0, 0, 12 },
+		{ 1, 0, 0, 14 },
+		{ 1, 0, 0, 16 },
+		{ 1, 0, 0, 18 },
+		{ 1, 0, 0, 20 },
+		{ 1, 0, 0, 22 },
+		{ 1, 0, 0, 24 },
+		{ 1, 0, 0, 26 },
+		{ 1, 0, 0, 28 },
+		{ 1, 0, 0, 30 },
+		// fix arr x 16
+		{ 1, 0, 0, 0 },
+		{ 1, 0, 0, 1 },
+		{ 1, 0, 0, 2 },
+		{ 1, 0, 0, 3 },
+		{ 1, 0, 0, 4 },
+		{ 1, 0, 0, 5 },
+		{ 1, 0, 0, 6 },
+		{ 1, 0, 0, 7 },
+		{ 1, 0, 0, 8 },
+		{ 1, 0, 0, 9 },
+		{ 1, 0, 0, 10 },
+		{ 1, 0, 0, 11 },
+		{ 1, 0, 0, 12 },
+		{ 1, 0, 0, 13 },
+		{ 1, 0, 0, 14 },
+		{ 1, 0, 0, 15 },
+		// fix str x 32
+		{ 1 },
+		{ 2 },
+		{ 3 },
+		{ 4 },
+		{ 5 },
+		{ 6 },
+		{ 7 },
+		{ 8 },
+		{ 9 },
+		{ 10 },
+		{ 11 },
+		{ 12 },
+		{ 13 },
+		{ 14 },
+		{ 15 },
+		{ 16 },
+		{ 17 },
+		{ 18 },
+		{ 19 },
+		{ 20 },
+		{ 21 },
+		{ 22 },
+		{ 23 },
+		{ 24 },
+		{ 25 },
+		{ 26 },
+		{ 27 },
+		{ 28 },
+		{ 29 },
+		{ 30 },
+		{ 31 },
+		{ 32 },
+		// nil bas bool x 2
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		// bin8 bin16 bin32
+		{ 1 + 1, 1, 1 },
+		{ 1 + 2, 2, 1 },
+		{ 1 + 4, 3, 1 },
+		// ext8 ext16 ext32
+		{ 2 + 1, 1, 1 },
+		{ 2 + 2, 2, 1 },
+		{ 2 + 4, 3, 1 },
+		// float double
+		{ 1 + 4 },
+		{ 1 + 8 },
+		// uint 8 - 64
+		{ 1 + 1 },
+		{ 1 + 2 },
+		{ 1 + 4 },
+		{ 1 + 8 },
+		// int 8 - 64
+		{ 1 + 1 },
+		{ 1 + 2 },
+		{ 1 + 4 },
+		{ 1 + 8 },
+		// fixext 1-16
+		{ 2 + 1 },
+		{ 2 + 2 },
+		{ 2 + 4 },
+		{ 2 + 8 },
+		{ 2 + 16 },
+		// str8 str16 str32
+		{ 1 + 1, 1, 1 },
+		{ 1 + 2, 2, 1 },
+		{ 1 + 4, 3, 1 },
+		// arr16 arr32
+		{ 1 + 2, 2, 0, 0, 1 },
+		{ 1 + 4, 3, 0, 0, 1 },
+		// map16 map32
+		{ 1 + 2, 2, 0, 0, 2 },
+		{ 1 + 4, 3, 0, 0, 2 },
+		// fix int x 32
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+		{ 1 },
+	};
+	static_assert(std::size(tag_info) == 256, "Smth was missed?");
 
 } // namespace details {
 
@@ -767,18 +1002,20 @@ Dec<BUFFER>::SkipCommon()
 	}
 	size_t value;
 	switch (info.read_value_size) {
-		case 0: value = 0; break;
-		case 1:
-			value = bswap(m_Buf.template get<uint8_t>(m_Cur + 1));
-			break;
-		case 2:
-			value = bswap(m_Buf.template get<uint16_t>(m_Cur + 1));
-			break;
-		case 3:
-			value = bswap(m_Buf.template get<uint32_t>(m_Cur + 1));
-			break;
-		default:
-			unreachable();
+	case 0:
+		value = 0;
+		break;
+	case 1:
+		value = bswap(m_Buf.template get<uint8_t>(m_Cur + 1));
+		break;
+	case 2:
+		value = bswap(m_Buf.template get<uint16_t>(m_Cur + 1));
+		break;
+	case 3:
+		value = bswap(m_Buf.template get<uint32_t>(m_Cur + 1));
+		break;
+	default:
+		unreachable();
 	}
 	size_t obj_size = info.header_size + value * info.read_value_str_like;
 	if (!m_Buf.has(m_Cur, obj_size)) {
@@ -794,7 +1031,7 @@ Dec<BUFFER>::SkipCommon()
 template <class DEC, class READER, class SEQUENCE>
 struct ReaderMap;
 
-template <class DEC, class READER, size_t ... N>
+template <class DEC, class READER, size_t... N>
 struct ReaderMap<DEC, READER, std::index_sequence<N...>> {
 	using Transition_t = typename DEC::Transition_t;
 	template <size_t I>
@@ -802,13 +1039,13 @@ struct ReaderMap<DEC, READER, std::index_sequence<N...>> {
 	{
 		if constexpr (I <= 0x7f)
 			return &DEC::template ReadUint<READER, void>;
-		else if constexpr (I <= 0x8f )
+		else if constexpr (I <= 0x8f)
 			return &DEC::template ReadMap<READER, void>;
-		else if constexpr (I <= 0x9f )
+		else if constexpr (I <= 0x9f)
 			return &DEC::template ReadArr<READER, void>;
-		else if constexpr (I <= 0xa0 )
+		else if constexpr (I <= 0xa0)
 			return &DEC::template ReadZeroStr<READER>;
-		else if constexpr (I <= 0xbf )
+		else if constexpr (I <= 0xbf)
 			return &DEC::template ReadStr<READER, void>;
 		else if constexpr (I <= 0xc0)
 			return &DEC::template ReadNil<READER>;
@@ -849,7 +1086,8 @@ struct ReaderMap<DEC, READER, std::index_sequence<N...>> {
 		else if constexpr (I <= 0xd3)
 			return &DEC::template ReadInt<READER, int64_t>;
 		else if constexpr (I <= 0xd8)
-			return &DEC::template ReadFixedExt<READER, 1u << (I - 0xd4)>;
+			return &DEC::template ReadFixedExt<READER,
+							   1u << (I - 0xd4)>;
 		else if constexpr (I <= 0xd9)
 			return &DEC::template ReadStr<READER, uint8_t>;
 		else if constexpr (I <= 0xda)
@@ -868,20 +1106,20 @@ struct ReaderMap<DEC, READER, std::index_sequence<N...>> {
 			return &DEC::template ReadInt<READER, void>;
 		static_assert(I <= 0xff, "Wtf?");
 	}
-	static constexpr Transition_t transitions[256] = {get<N>()...};
+	static constexpr Transition_t transitions[256] = { get<N>()... };
 };
 
 template <class BUFFER>
-template<class READER, class... ARGS>
+template <class READER, class... ARGS>
 void
-Dec<BUFFER>::FillState(State &st, ARGS&&... args)
+Dec<BUFFER>::FillState(State &st, ARGS &&...args)
 {
 	// We never use the second state on top level.
 	assert(&st != &m_Levels[0].state[1]);
 	using Reader_t = std::decay_t<READER>;
 	st.objHolder.template create<Reader_t>(std::forward<ARGS>(args)...);
 	st.transitions = ReaderMap<Dec_t, Reader_t,
-		std::make_index_sequence<256>>::transitions;
+				   std::make_index_sequence<256>>::transitions;
 	st.storeEndIterator =
 		st.objHolder.template get<Reader_t>().StoreEndIterator();
 }
@@ -893,7 +1131,8 @@ Dec<BUFFER>::FillSkipState(State &st, BufferIterator_t *save_end)
 #define REP16(x) x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x
 #define REP16_DELAYED(x) REP16(x)
 #define REP256(x) REP16(REP16_DELAYED(x))
-	static constexpr Transition_t transit[] = {REP256(&Dec_t::SkipCommon)};
+	static constexpr Transition_t transit[] = { REP256(
+		&Dec_t::SkipCommon) };
 	static_assert(std::size(transit) == 256, "Miss smth?");
 #undef REP256
 #undef REP16_DELAYED
@@ -927,31 +1166,34 @@ Dec<BUFFER>::AbandonDecoder(ReadResult_t error)
 
 template <class BUFFER>
 template <class T, class... U>
-void Dec<BUFFER>::SetReader(bool second, U&&... u)
+void
+Dec<BUFFER>::SetReader(bool second, U &&...u)
 {
 	FillState<T>(m_CurLevel->state[second], std::forward<U>(u)...);
 }
 
 template <class BUFFER>
 template <class T>
-void Dec<BUFFER>::SetReader(bool second, T&& t)
+void
+Dec<BUFFER>::SetReader(bool second, T &&t)
 {
 	FillState<T>(m_CurLevel->state[second], std::forward<T>(t));
 }
 
 template <class BUFFER>
-void Dec<BUFFER>::Skip(BufferIterator_t *saveEnd)
+void
+Dec<BUFFER>::Skip(BufferIterator_t *saveEnd)
 {
 	FillSkipState(m_CurLevel->state[0], saveEnd);
 	FillSkipState(m_CurLevel->state[1], saveEnd);
 }
 
 template <class BUFFER>
-void Dec<BUFFER>::SetPosition(BufferIterator_t &itr)
+void
+Dec<BUFFER>::SetPosition(BufferIterator_t &itr)
 {
 	m_Cur = itr;
 }
-
 
 template <class BUFFER>
 ReadResult_t

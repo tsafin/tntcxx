@@ -28,14 +28,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include "../src/mpp/mpp.hpp"
 #include "../src/Buffer/Buffer.hpp"
+#include "../src/mpp/mpp.hpp"
 
 #include "Utils/Helpers.hpp"
 
 template <bool expect_c_string, class T>
 void
-test_static_assert_strings(const T&)
+test_static_assert_strings(const T &)
 {
 	static_assert(expect_c_string != mpp::looks_like_str_v<T>);
 	static_assert(expect_c_string == mpp::is_c_str_v<T>);
@@ -50,9 +50,9 @@ test_static_assert()
 	char arr[20] = "aaa";
 	const char *cstr = "bbb";
 	char *mcstr = arr;
-	test_static_assert_strings<false>(std::string{});
+	test_static_assert_strings<false>(std::string {});
 	test_static_assert_strings<false>(str);
-	test_static_assert_strings<false>(std::string_view{});
+	test_static_assert_strings<false>(std::string_view {});
 	test_static_assert_strings<false>(strv);
 	test_static_assert_strings<false>(arr);
 	test_static_assert_strings<false>("ccc");
@@ -65,13 +65,10 @@ test_type_visual()
 {
 	TEST_INIT(0);
 	using namespace mpp;
-	std::cout << compact::MP_ARR << " "
-		  << compact::MP_MAP << " "
+	std::cout << compact::MP_ARR << " " << compact::MP_MAP << " "
 		  << compact::MP_EXT << "\n";
-	std::cout << MP_NIL << " "
-		  << MP_BOOL << " "
-		  << (MP_UINT | MP_INT) << " "
-		  << (MP_BIN  | MP_STR) << " "
+	std::cout << MP_NIL << " " << MP_BOOL << " " << (MP_UINT | MP_INT)
+		  << " " << (MP_BIN | MP_STR) << " "
 		  << (MP_UINT | MP_INT | MP_DBL | MP_FLT) << "\n";
 }
 
@@ -84,22 +81,22 @@ struct TestArrStruct {
 	bool b;
 };
 
-
 struct ArrValueReader : mpp::DefaultErrorHandler {
 	using Buffer_t = tnt::Buffer<16 * 1024>;
 	using BufferIterator_t = typename Buffer_t::iterator;
-	explicit ArrValueReader(TestArrStruct& a) : arr(a) {}
+	explicit ArrValueReader(TestArrStruct &a) : arr(a) {}
 	static constexpr mpp::Type VALID_TYPES = mpp::MP_DBL | mpp::MP_FLT |
 		mpp::MP_STR | mpp::MP_NIL | mpp::MP_BOOL;
 	template <class T>
-	void Value(const BufferIterator_t&, mpp::compact::Type, T v)
+	void Value(const BufferIterator_t &, mpp::compact::Type, T v)
 	{
 		using A = TestArrStruct;
-		static constexpr std::tuple map(&A::dbl, &A::flt, &A::nil, &A::b);
+		static constexpr std::tuple map(&A::dbl, &A::flt, &A::nil,
+						&A::b);
 		auto ptr = std::get<std::decay_t<T> A::*>(map);
 		arr.*ptr = v;
 	}
-	void Value(BufferIterator_t& itr, mpp::compact::Type, mpp::StrValue v)
+	void Value(BufferIterator_t &itr, mpp::compact::Type, mpp::StrValue v)
 	{
 		BufferIterator_t tmp = itr;
 		tmp += v.offset;
@@ -112,22 +109,23 @@ struct ArrValueReader : mpp::DefaultErrorHandler {
 		*dst = 0;
 	}
 
-	BufferIterator_t* StoreEndIterator() { return nullptr; }
-	TestArrStruct& arr;
+	BufferIterator_t *StoreEndIterator() { return nullptr; }
+	TestArrStruct &arr;
 };
 
 struct ArrReader : mpp::SimpleReaderBase<tnt::Buffer<16 * 1024>, mpp::MP_ARR> {
 	using Buffer_t = tnt::Buffer<16 * 1024>;
 	using BufferIterator_t = typename Buffer_t::iterator;
-	ArrReader(TestArrStruct& a, mpp::Dec<Buffer_t>& d) : arr(a), dec(d) {}
-	void Value(const BufferIterator_t&, mpp::compact::Type, mpp::ArrValue v)
+	ArrReader(TestArrStruct &a, mpp::Dec<Buffer_t> &d) : arr(a), dec(d) {}
+	void Value(const BufferIterator_t &, mpp::compact::Type,
+		   mpp::ArrValue v)
 	{
 		arr.parsed_arr_size = v.size;
-		dec.SetReader(false, ArrValueReader{arr});
+		dec.SetReader(false, ArrValueReader { arr });
 	}
 
-	TestArrStruct& arr;
-	mpp::Dec<Buffer_t>& dec;
+	TestArrStruct &arr;
+	mpp::Dec<Buffer_t> &dec;
 };
 
 namespace example {
@@ -144,59 +142,57 @@ struct TestMapStruct {
 };
 
 struct MapKeyReader : mpp::SimpleReaderBase<Buffer_t, mpp::MP_UINT> {
-	MapKeyReader(mpp::Dec<Buffer_t>& d, TestMapStruct& m) : dec(d), map(m) {}
+	MapKeyReader(mpp::Dec<Buffer_t> &d, TestMapStruct &m) : dec(d), map(m)
+	{}
 
-	void Value(const BufferIterator_t&, mpp::compact::Type, uint64_t k)
+	void Value(const BufferIterator_t &, mpp::compact::Type, uint64_t k)
 	{
 		using map_t = TestMapStruct;
 		using Boo_t = mpp::SimpleReader<Buffer_t, mpp::MP_BOOL, bool>;
-		using Str_t = mpp::SimpleStrReader<Buffer_t, sizeof(map_t{}.str)>;
-		using Arr_t = mpp::SimpleArrReader
-			<mpp::Dec<Buffer_t>,
-			Buffer_t,
-			sizeof(map_t{}.arr) / sizeof(map_t{}.arr[0]),
-			mpp::MP_UINT,
-			int
-			>;
+		using Str_t =
+			mpp::SimpleStrReader<Buffer_t, sizeof(map_t {}.str)>;
+		using Arr_t =
+			mpp::SimpleArrReader<mpp::Dec<Buffer_t>, Buffer_t,
+					     sizeof(map_t {}.arr) /
+						     sizeof(map_t {}.arr[0]),
+					     mpp::MP_UINT, int>;
 		switch (k) {
 		case 10:
-			dec.SetReader(true, Boo_t{map.boo});
+			dec.SetReader(true, Boo_t { map.boo });
 			break;
 		case 11:
-			dec.SetReader(true, Str_t{map.str, map.str_size});
+			dec.SetReader(true, Str_t { map.str, map.str_size });
 			break;
 		case 12:
-			dec.SetReader(true, Arr_t{dec, map.arr, map.arr_size});
+			dec.SetReader(true,
+				      Arr_t { dec, map.arr, map.arr_size });
 			break;
 		default:
 			dec.AbortAndSkipRead();
 		}
 	}
 
-	mpp::Dec<Buffer_t>& dec;
-	TestMapStruct& map;
+	mpp::Dec<Buffer_t> &dec;
+	TestMapStruct &map;
 };
 
-
 struct MapReader : mpp::SimpleReaderBase<tnt::Buffer<16 * 1024>, mpp::MP_MAP> {
-	MapReader(mpp::Dec<Buffer_t>& d, TestMapStruct& m) : dec(d), map(m) {}
+	MapReader(mpp::Dec<Buffer_t> &d, TestMapStruct &m) : dec(d), map(m) {}
 
-	void Value(const BufferIterator_t&, mpp::compact::Type, mpp::MapValue)
+	void Value(const BufferIterator_t &, mpp::compact::Type, mpp::MapValue)
 	{
-		dec.SetReader(false, MapKeyReader{dec, map});
+		dec.SetReader(false, MapKeyReader { dec, map });
 	}
 
-	mpp::Dec<Buffer_t>& dec;
-	TestMapStruct& map;
+	mpp::Dec<Buffer_t> &dec;
+	TestMapStruct &map;
 };
 
 } // namespace example {
 
-
 enum {
 	MUNUS_ONE_HUNDRED = -100,
 };
-
 
 enum {
 	FOR_BILLIONS = 4000000000u,
@@ -222,13 +218,13 @@ test_basic()
 	enc.add(-100);
 	enc.add(-1000);
 	enc.add("aaa");
-	const char* bbb = "bbb";
+	const char *bbb = "bbb";
 	enc.add(bbb);
 	// Add array.
 	enc.add(std::make_tuple(1., 2.f, "test", nullptr, false));
 	// Add map.
 	enc.add(mpp::as_map(std::forward_as_tuple(10, true, 11, "val", 12,
-					   std::make_tuple(1, 2, 3))));
+						  std::make_tuple(1, 2, 3))));
 
 	for (auto itr = buf.begin(); itr != buf.end(); ++itr) {
 		char c = buf.get<uint8_t>(itr);
@@ -244,38 +240,47 @@ test_basic()
 	mpp::Dec<Buf_t> dec(buf);
 	{
 		int val = 15478;
-		dec.SetReader(false, mpp::SimpleReader<Buf_t, mpp::MP_UINT, int>{val});
+		dec.SetReader(
+			false,
+			mpp::SimpleReader<Buf_t, mpp::MP_UINT, int> { val });
 		mpp::ReadResult_t res = dec.Read();
 		fail_if(res != mpp::READ_SUCCESS);
 		fail_if(val != 0);
 	}
 	{
 		int val = 15478;
-		dec.SetReader(false, mpp::SimpleReader<Buf_t, mpp::MP_AINT, int>{val});
+		dec.SetReader(
+			false,
+			mpp::SimpleReader<Buf_t, mpp::MP_AINT, int> { val });
 		mpp::ReadResult_t res = dec.Read();
 		fail_if(res != mpp::READ_SUCCESS);
 		fail_if(val != 10);
 	}
 	{
 		unsigned short val = 15478;
-		mpp::SimpleReader<Buf_t, mpp::MP_ANUM, unsigned short> r{val};
+		mpp::SimpleReader<Buf_t, mpp::MP_ANUM, unsigned short> r {
+			val
+		};
 		dec.SetReader(false, r);
 		mpp::ReadResult_t res = dec.Read();
 		fail_if(res != mpp::READ_SUCCESS);
 		fail_if(val != 200);
 	}
-	for (uint64_t exp : {2000ull, 2000000ull, 4000000000ull, 4000000000ull, 20000000000ull})
-	{
+	for (uint64_t exp : { 2000ull, 2000000ull, 4000000000ull, 4000000000ull,
+			      20000000000ull }) {
 		uint64_t val = 15478;
-		dec.SetReader(false, mpp::SimpleReader<Buf_t, mpp::MP_UINT, uint64_t>{val});
+		dec.SetReader(false,
+			      mpp::SimpleReader<Buf_t, mpp::MP_UINT, uint64_t> {
+				      val });
 		mpp::ReadResult_t res = dec.Read();
 		fail_if(res != mpp::READ_SUCCESS);
 		fail_if(val != exp);
 	}
-	for (int32_t exp : {-1, -100, -100, -1000})
-	{
+	for (int32_t exp : { -1, -100, -100, -1000 }) {
 		int32_t val = 15478;
-		dec.SetReader(false, mpp::SimpleReader<Buf_t, mpp::MP_AINT, int32_t>{val});
+		dec.SetReader(false,
+			      mpp::SimpleReader<Buf_t, mpp::MP_AINT, int32_t> {
+				      val });
 		mpp::ReadResult_t res = dec.Read();
 		fail_if(res != mpp::READ_SUCCESS);
 		fail_if(val != exp);
@@ -284,7 +289,8 @@ test_basic()
 		constexpr size_t S = 16;
 		char str[S];
 		size_t size;
-		dec.SetReader(false, mpp::SimpleStrReader<Buf_t, S - 1>{str, size});
+		dec.SetReader(false,
+			      mpp::SimpleStrReader<Buf_t, S - 1> { str, size });
 		mpp::ReadResult_t res = dec.Read();
 		str[size] = 0;
 		fail_if(res != mpp::READ_SUCCESS);
@@ -295,7 +301,8 @@ test_basic()
 		constexpr size_t S = 16;
 		char str[S];
 		size_t size;
-		dec.SetReader(false, mpp::SimpleStrReader<Buf_t, S - 1>{str, size});
+		dec.SetReader(false,
+			      mpp::SimpleStrReader<Buf_t, S - 1> { str, size });
 		mpp::ReadResult_t res = dec.Read();
 		str[size] = 0;
 		fail_if(res != mpp::READ_SUCCESS);
@@ -304,7 +311,7 @@ test_basic()
 	}
 	{
 		TestArrStruct arr = {};
-		dec.SetReader(false, ArrReader{arr, dec});
+		dec.SetReader(false, ArrReader { arr, dec });
 		mpp::ReadResult_t res = dec.Read();
 		fail_if(res != mpp::READ_SUCCESS);
 		fail_if(arr.parsed_arr_size != 5);
@@ -313,12 +320,11 @@ test_basic()
 		fail_if(strcmp(arr.str, "test") != 0);
 		fail_if(arr.nil != nullptr);
 		fail_if(arr.b != false);
-
 	}
 	{
 		using namespace example;
 		TestMapStruct map = {};
-		dec.SetReader(false, MapReader{dec, map});
+		dec.SetReader(false, MapReader { dec, map });
 		mpp::ReadResult_t res = dec.Read();
 		fail_unless(res == mpp::READ_SUCCESS);
 		fail_unless(map.boo == true);
@@ -330,7 +336,8 @@ test_basic()
 	}
 }
 
-int main()
+int
+main()
 {
 	test_static_assert();
 	test_type_visual();

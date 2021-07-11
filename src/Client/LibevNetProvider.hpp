@@ -31,20 +31,20 @@
  */
 #include <assert.h>
 #include <chrono>
-#include <errno.h>
-#include <unistd.h>
-#include <stdexcept>
 #include <cstring>
+#include <errno.h>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 
+#include "../Utils/rlist.h"
 #include "Connection.hpp"
 #include "Connector.hpp"
 #include "NetworkEngine.hpp"
-#include "../Utils/rlist.h"
 #include "ev.h"
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 class Connector;
 
 struct WaitWatcher {
@@ -62,14 +62,15 @@ timerDisable(struct ev_loop *loop, struct ev_timer *timer)
 		ev_timer_stop(loop, timer);
 }
 
-template<class BUFFER, class NETWORK>
-class LibevNetProvider {
+template <class BUFFER, class NETWORK>
+class LibevNetProvider
+{
 public:
 	using NetProvider_t = LibevNetProvider<BUFFER, NETWORK>;
-	using Conn_t = Connection<BUFFER, NetProvider_t >;
+	using Conn_t = Connection<BUFFER, NetProvider_t>;
 
 	LibevNetProvider(struct ev_loop *loop = nullptr);
-	int connect(Conn_t &conn, const std::string_view& addr, unsigned port,
+	int connect(Conn_t &conn, const std::string_view &addr, unsigned port,
 		    size_t timeout);
 	void close(Conn_t &conn);
 	void readyToSend(Conn_t &conn);
@@ -92,7 +93,7 @@ private:
 	bool m_IsOwnLoop;
 };
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 void
 LibevNetProvider<BUFFER, NETWORK>::releaseWatchers(int fd)
 {
@@ -105,11 +106,11 @@ LibevNetProvider<BUFFER, NETWORK>::releaseWatchers(int fd)
 	m_Watchers.erase(fd);
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 static inline int
-connectionReceive(Connection<BUFFER,  LibevNetProvider<BUFFER, NETWORK>> &conn)
+connectionReceive(Connection<BUFFER, LibevNetProvider<BUFFER, NETWORK>> &conn)
 {
-	assert(! conn.status.is_failed);
+	assert(!conn.status.is_failed);
 	size_t total = NETWORK::readyToRecv(conn.socket);
 	if (total < 0) {
 		LOG_ERROR("Failed to check socket: ioctl returned errno ",
@@ -117,8 +118,7 @@ connectionReceive(Connection<BUFFER,  LibevNetProvider<BUFFER, NETWORK>> &conn)
 		return -1;
 	}
 	size_t iov_cnt = 0;
-	struct iovec *iov =
-		inBufferToIOV(conn, total, &iov_cnt);
+	struct iovec *iov = inBufferToIOV(conn, total, &iov_cnt);
 	int read_bytes = NETWORK::recvall(conn.socket, iov, iov_cnt, true);
 	hasNotRecvBytes(conn, total - read_bytes);
 	if (read_bytes < 0) {
@@ -126,13 +126,13 @@ connectionReceive(Connection<BUFFER,  LibevNetProvider<BUFFER, NETWORK>> &conn)
 			return 1;
 		}
 		conn.setError(std::string("Failed to receive response: ") +
-			       strerror(errno));
+			      strerror(errno));
 		return -1;
 	}
 	return total - read_bytes;
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 static void
 recv_cb(struct ev_loop *loop, struct ev_io *watcher, int /* revents */)
 {
@@ -141,14 +141,15 @@ recv_cb(struct ev_loop *loop, struct ev_io *watcher, int /* revents */)
 		reinterpret_cast<WaitWatcher *>(watcher->data);
 	assert(&waitWatcher->in == watcher);
 	Connection<BUFFER, NetProvider_t> *conn =
-		reinterpret_cast<Connection<BUFFER, NetProvider_t> *>(waitWatcher->connection);
+		reinterpret_cast<Connection<BUFFER, NetProvider_t> *>(
+			waitWatcher->connection);
 	assert(waitWatcher->in.fd == conn->socket);
 
 	timerDisable(loop, waitWatcher->timer);
 	int rc = connectionReceive(*conn);
 	if (rc < 0) {
-		NetProvider_t *provider =
-			reinterpret_cast<NetProvider_t *>(waitWatcher->provider);
+		NetProvider_t *provider = reinterpret_cast<NetProvider_t *>(
+			waitWatcher->provider);
 		provider->close(*conn);
 		return;
 	}
@@ -156,11 +157,11 @@ recv_cb(struct ev_loop *loop, struct ev_io *watcher, int /* revents */)
 		conn->readyToDecode();
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 static inline int
-connectionSend(Connection<BUFFER,  LibevNetProvider<BUFFER, NETWORK>> &conn)
+connectionSend(Connection<BUFFER, LibevNetProvider<BUFFER, NETWORK>> &conn)
 {
-	assert(! conn.status.is_failed);
+	assert(!conn.status.is_failed);
 	while (hasDataToSend(conn)) {
 		size_t sent_bytes = 0;
 		size_t iov_cnt = 0;
@@ -182,7 +183,7 @@ connectionSend(Connection<BUFFER,  LibevNetProvider<BUFFER, NETWORK>> &conn)
 	return 0;
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 static void
 send_cb(struct ev_loop *loop, struct ev_io *watcher, int /* revents */)
 {
@@ -191,13 +192,14 @@ send_cb(struct ev_loop *loop, struct ev_io *watcher, int /* revents */)
 		reinterpret_cast<struct WaitWatcher *>(watcher->data);
 	assert(&waitWatcher->out == watcher);
 	Connection<BUFFER, NetProvider_t> *conn =
-		reinterpret_cast<Connection<BUFFER, NetProvider_t> *>(waitWatcher->connection);
+		reinterpret_cast<Connection<BUFFER, NetProvider_t> *>(
+			waitWatcher->connection);
 	assert(watcher->fd == conn->socket);
 	timerDisable(loop, waitWatcher->timer);
 	int rc = connectionSend(*conn);
 	if (rc < 0) {
-		NetProvider_t *provider =
-			reinterpret_cast<NetProvider_t *>(waitWatcher->provider) ;
+		NetProvider_t *provider = reinterpret_cast<NetProvider_t *>(
+			waitWatcher->provider);
 		provider->close(*conn);
 		return;
 	}
@@ -217,9 +219,9 @@ send_cb(struct ev_loop *loop, struct ev_io *watcher, int /* revents */)
 		ev_io_stop(loop, watcher);
 }
 
-template<class BUFFER, class NETWORK>
-LibevNetProvider<BUFFER, NETWORK>::LibevNetProvider(struct ev_loop *loop) :
-	m_Loop(loop), m_IsOwnLoop(false)
+template <class BUFFER, class NETWORK>
+LibevNetProvider<BUFFER, NETWORK>::LibevNetProvider(struct ev_loop *loop)
+	: m_Loop(loop), m_IsOwnLoop(false)
 {
 	if (m_Loop == nullptr) {
 		m_Loop = ev_default_loop(0);
@@ -230,7 +232,7 @@ LibevNetProvider<BUFFER, NETWORK>::LibevNetProvider(struct ev_loop *loop) :
 	rlist_create(&m_ready_to_write);
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 LibevNetProvider<BUFFER, NETWORK>::~LibevNetProvider()
 {
 	for (auto &w : m_Watchers) {
@@ -242,13 +244,14 @@ LibevNetProvider<BUFFER, NETWORK>::~LibevNetProvider()
 	m_Loop = nullptr;
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 int
 LibevNetProvider<BUFFER, NETWORK>::registerWatchers(Conn_t *conn, int fd)
 {
-	WaitWatcher *watcher = (WaitWatcher *) calloc(1, sizeof(WaitWatcher));
+	WaitWatcher *watcher = (WaitWatcher *)calloc(1, sizeof(WaitWatcher));
 	if (watcher == nullptr) {
-		conn->setError(std::string("Failed to allocate memory for WaitWatcher"));
+		conn->setError(std::string(
+			"Failed to allocate memory for WaitWatcher"));
 		return -1;
 	}
 
@@ -260,30 +263,32 @@ LibevNetProvider<BUFFER, NETWORK>::registerWatchers(Conn_t *conn, int fd)
 	ev_io_init(&watcher->in, (&recv_cb<BUFFER, NETWORK>), fd, EV_READ);
 	ev_io_init(&watcher->out, (&send_cb<BUFFER, NETWORK>), fd, EV_WRITE);
 
-	m_Watchers.insert({fd, watcher});
+	m_Watchers.insert({ fd, watcher });
 	ev_io_start(m_Loop, &watcher->in);
-	ev_io_start(m_Loop ,&watcher->out);
+	ev_io_start(m_Loop, &watcher->out);
 	return 0;
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 int
 LibevNetProvider<BUFFER, NETWORK>::connect(Conn_t &conn,
-					   const std::string_view& addr,
+					   const std::string_view &addr,
 					   unsigned port, size_t timeout)
 {
 	int socket = -1;
-	socket = port == 0 ? NETWORK::connectUNIX(addr) :
-		 NETWORK::connectINET(addr, port, timeout);
+	socket = port == 0 ? NETWORK::connectUNIX(addr)
+			   : NETWORK::connectINET(addr, port, timeout);
 	if (socket < 0) {
-		conn.setError(std::string("Failed to establish connection to ") +
-			      std::string(addr));
+		conn.setError(
+			std::string("Failed to establish connection to ") +
+			std::string(addr));
 		return -1;
 	}
 	LOG_DEBUG("Connected to ", addr, ", socket is ", socket);
 	/* Receive and decode greetings. */
 	size_t iov_cnt = 0;
-	struct iovec *iov = inBufferToIOV(conn, Iproto::GREETING_SIZE, &iov_cnt);
+	struct iovec *iov =
+		inBufferToIOV(conn, Iproto::GREETING_SIZE, &iov_cnt);
 	LOG_DEBUG("Receiving greetings...");
 	int read_bytes = NETWORK::recvall(socket, iov, iov_cnt, false);
 	if (read_bytes < 0) {
@@ -310,7 +315,7 @@ LibevNetProvider<BUFFER, NETWORK>::connect(Conn_t &conn,
 	return 0;
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 void
 LibevNetProvider<BUFFER, NETWORK>::close(Conn_t &conn)
 {
@@ -321,7 +326,7 @@ LibevNetProvider<BUFFER, NETWORK>::close(Conn_t &conn)
 	conn.socket = -1;
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 void
 LibevNetProvider<BUFFER, NETWORK>::readyToSend(Conn_t &conn)
 {
@@ -329,7 +334,7 @@ LibevNetProvider<BUFFER, NETWORK>::readyToSend(Conn_t &conn)
 		return;
 	Connection<BUFFER, LibevNetProvider> *tmp;
 	/* Check if connection is already queued to be send. */
-	rlist_foreach_entry(tmp, &m_ready_to_write, m_in_write) {
+	rlist_foreach_entry (tmp, &m_ready_to_write, m_in_write) {
 		if (tmp == &conn)
 			return;
 	}
@@ -340,40 +345,43 @@ LibevNetProvider<BUFFER, NETWORK>::readyToSend(Conn_t &conn)
 static void
 timeout_cb(EV_P_ ev_timer *w, int /* revents */)
 {
-	(void) w;
+	(void)w;
 	LOG_ERROR("Libev timed out!");
 	/* Stop external loop */
 	ev_break(EV_A_ EVBREAK_ONE);
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 int
 LibevNetProvider<BUFFER, NETWORK>::wait(int timeout)
 {
 	assert(timeout >= 0);
-	ev_timer_init(&m_TimeoutWatcher, &timeout_cb, timeout / MILLISECONDS, 0 /* repeat */);
+	ev_timer_init(&m_TimeoutWatcher, &timeout_cb, timeout / MILLISECONDS,
+		      0 /* repeat */);
 	ev_timer_start(m_Loop, &m_TimeoutWatcher);
 	/* Queue pending connections to be send. */
-	if (! rlist_empty(&m_ready_to_write)) {
+	if (!rlist_empty(&m_ready_to_write)) {
 		Connection<BUFFER, LibevNetProvider> *conn;
-		rlist_foreach_entry(conn, &m_ready_to_write, m_in_write) {
+		rlist_foreach_entry (conn, &m_ready_to_write, m_in_write) {
 			auto w = m_Watchers.find(conn->socket);
 			assert(w != m_Watchers.end());
-			if (! ev_is_active(&w->second->out))
-				ev_feed_event(m_Loop, &w->second->out, EV_WRITE);
+			if (!ev_is_active(&w->second->out))
+				ev_feed_event(m_Loop, &w->second->out,
+					      EV_WRITE);
 		}
 	}
 	ev_run(m_Loop, EVRUN_ONCE);
 	return 0;
 }
 
-template<class BUFFER, class NETWORK>
+template <class BUFFER, class NETWORK>
 bool
 LibevNetProvider<BUFFER, NETWORK>::check(Conn_t &connection)
 {
 	int error = 0;
 	socklen_t len = sizeof(error);
-	int rc = getsockopt(connection.socket, SOL_SOCKET, SO_ERROR, &error, &len);
+	int rc = getsockopt(connection.socket, SOL_SOCKET, SO_ERROR, &error,
+			    &len);
 	if (rc != 0) {
 		connection.setError(strerror(rc));
 		return false;

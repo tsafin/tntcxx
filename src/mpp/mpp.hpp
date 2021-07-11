@@ -30,5 +30,5 @@
  * SUCH DAMAGE.
  */
 
-#include "Enc.hpp"
 #include "Dec.hpp"
+#include "Enc.hpp"

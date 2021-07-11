@@ -35,36 +35,37 @@
 #include <iostream>
 #include <string_view>
 
-enum LogLevel {
-	DEBUG = 0,
-	WARNING = 1,
-	ERROR = 2
-};
+enum LogLevel { DEBUG = 0, WARNING = 1, ERROR = 2 };
 
-static inline const char*
+static inline const char *
 logLevelToStr(LogLevel lvl)
 {
 	switch (lvl) {
-		case DEBUG   : return "DEBUG";
-		case WARNING : return "WARNING";
-		case ERROR   : return "ERROR";
+	case DEBUG:
+		return "DEBUG";
+	case WARNING:
+		return "WARNING";
+	case ERROR:
+		return "ERROR";
 	}
 	assert(0 && "Unknown log level");
 	return "Unknown log level";
 }
 
-inline std::ostream& operator<<(std::ostream& strm, LogLevel lvl)
+inline std::ostream &
+operator<<(std::ostream &strm, LogLevel lvl)
 {
 	return strm << logLevelToStr(lvl);
 }
 
-class Logger {
+class Logger
+{
 public:
 	Logger(LogLevel lvl) : m_LogLvl(lvl) {};
 
 	template <class... ARGS>
-	void log(std::ostream& strm, LogLevel log_lvl,
-		 const char *file, int line, ARGS&& ...args)
+	void log(std::ostream &strm, LogLevel log_lvl, const char *file,
+		 int line, ARGS &&...args)
 	{
 		if (!isLogPossible(log_lvl))
 			return;
@@ -76,20 +77,16 @@ public:
 		// The line below is commented for compatibility with previous
 		// version. I'm not sure it was bug or feature, but the time,
 		// filename and line was not printed.
-		(void)file; (void)line;
-		//strm << timeString << " " << file << ':' << line << ' ';
+		(void)file;
+		(void)line;
+		// strm << timeString << " " << file << ':' << line << ' ';
 		strm << log_lvl << ": ";
 		(strm << ... << std::forward<ARGS>(args)) << '\n';
 	}
-	void setLogLevel(LogLevel lvl)
-	{
-		m_LogLvl = lvl;
-	}
+	void setLogLevel(LogLevel lvl) { m_LogLvl = lvl; }
+
 private:
-	bool isLogPossible(LogLevel lvl) const
-	{
-		return lvl >= m_LogLvl;
-	};
+	bool isLogPossible(LogLevel lvl) const { return lvl >= m_LogLvl; };
 	LogLevel m_LogLvl;
 };
 
@@ -99,6 +96,9 @@ inline Logger gLogger(DEBUG);
 inline Logger gLogger(ERROR);
 #endif
 
-#define LOG_DEBUG(...) gLogger.log(std::cout, DEBUG, __FILE__, __LINE__,  __VA_ARGS__)
-#define LOG_WARNING(...) gLogger.log(std::cout, WARNING, __FILE__, __LINE__, __VA_ARGS__)
-#define LOG_ERROR(...) gLogger.log(std::cerr, ERROR, __FILE__, __LINE__, __VA_ARGS__)
+#define LOG_DEBUG(...)                                                         \
+	gLogger.log(std::cout, DEBUG, __FILE__, __LINE__, __VA_ARGS__)
+#define LOG_WARNING(...)                                                       \
+	gLogger.log(std::cout, WARNING, __FILE__, __LINE__, __VA_ARGS__)
+#define LOG_ERROR(...)                                                         \
+	gLogger.log(std::cerr, ERROR, __FILE__, __LINE__, __VA_ARGS__)

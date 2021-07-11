@@ -44,9 +44,10 @@ struct Test : tnt::Ring {
 };
 
 template <class T>
-void checkRing(const Test* aRing, const T& aList)
+void
+checkRing(const Test *aRing, const T &aList)
 {
-	fail_unless(aRing->rgSelfCheck() ==  0);
+	fail_unless(aRing->rgSelfCheck() == 0);
 	fail_unless(aRing->rgCalcSize() == aList.size());
 	fail_unless(aRing->rgIsMono() == (aList.size() == 1));
 
@@ -58,12 +59,14 @@ void checkRing(const Test* aRing, const T& aList)
 	fail_unless(t == aRing);
 }
 
-void checkRing(const Test *aRing, const std::initializer_list<num_t> &aList)
+void
+checkRing(const Test *aRing, const std::initializer_list<num_t> &aList)
 {
 	return checkRing<std::initializer_list<num_t>>(aRing, aList);
 }
 
-static void simple()
+static void
+simple()
 {
 	TEST_INIT(0);
 	{
@@ -82,7 +85,7 @@ static void simple()
 		fail_unless(r.rgCalcSize() == 1);
 	}
 
-	for (bool back: {false, true}) {
+	for (bool back : { false, true }) {
 		// Add unitialized.
 		tnt::Ring r1(0);
 		tnt::Ring r2;
@@ -93,7 +96,7 @@ static void simple()
 		fail_unless(r1.rgCalcSize() == 2);
 		fail_unless(r1.rgCalcSize() == 2);
 	}
-	for (bool back: {false, true}) {
+	for (bool back : { false, true }) {
 		// Initialization by addition to a ring.
 		tnt::Ring r1(0);
 		tnt::Ring r2(r1, back);
@@ -103,7 +106,7 @@ static void simple()
 		fail_unless(r1.rgCalcSize() == 2);
 		fail_unless(r1.rgCalcSize() == 2);
 	}
-	for (bool back: {false, true}) {
+	for (bool back : { false, true }) {
 		// Add self if case of monoring (should do nothing).
 		tnt::Ring r(0);
 		r.rgAdd(&r, back);
@@ -111,9 +114,7 @@ static void simple()
 		fail_unless(r.rgSelfCheck() == 0);
 		fail_unless(r.rgCalcSize() == 1);
 	}
-	{
-	}
-	{
+	{} {
 		// Remove self if case of monoring (should do nothing).
 		tnt::Ring r(0);
 		r.rgRemove();
@@ -124,10 +125,10 @@ static void simple()
 
 	{
 		Test r(0);
-		checkRing(&r, {0});
+		checkRing(&r, { 0 });
 
 		Test more[10];
-		std::vector<num_t> sComp = {0};
+		std::vector<num_t> sComp = { 0 };
 		for (size_t i = 0; i < 10; i++) {
 			more[i].m_Num = i + 1;
 			r.rgAdd(&more[i], false);
@@ -142,10 +143,10 @@ static void simple()
 	}
 	{
 		Test r(0);
-		checkRing(&r, {0});
+		checkRing(&r, { 0 });
 
 		Test more[10];
-		std::vector<num_t> sComp = {0};
+		std::vector<num_t> sComp = { 0 };
 		for (size_t i = 0; i < 10; i++) {
 			more[i].m_Num = i + 1;
 			r.rgAdd(&more[i], true);
@@ -161,7 +162,8 @@ static void simple()
 }
 
 template <size_t SIZE1, size_t SIZE2>
-static void test_split_join(bool invert)
+static void
+test_split_join(bool invert)
 {
 	TEST_INIT(3, SIZE1, SIZE2, invert);
 	std::vector<num_t> list1;
@@ -176,10 +178,13 @@ static void test_split_join(bool invert)
 		// Strange thing. Without the line below I got compile erorr
 		// When building RelWithDebInfo build:
 		// tntcxx/test/RingUnitTest.cpp: In function ‘int main()’:
-		// tntcxx/test/RingUnitTest.cpp:184:19: error: array subscript [0, 0] is outside array bounds of ‘Test [1]’ [-Werror=array-bounds]
+		// tntcxx/test/RingUnitTest.cpp:184:19: error: array subscript
+		// [0, 0] is outside array bounds of ‘Test [1]’
+		// [-Werror=array-bounds]
 		//  184 |    r1[0].rgAdd(&r1[i], true);
 		//      |                 ~~^
-		if (i >= SIZE1) abort();
+		if (i >= SIZE1)
+			abort();
 
 		if (i > 0)
 			r1[0].rgAdd(&r1[i], true);
@@ -217,7 +222,8 @@ static void test_split_join(bool invert)
 }
 
 template <size_t SIZE1, size_t SIZE2>
-static void test_swap()
+static void
+test_swap()
 {
 	TEST_INIT(2, SIZE1, SIZE2);
 	std::vector<num_t> list1;
@@ -238,10 +244,13 @@ static void test_swap()
 		// Strange thing. Without the line below I got compile erorr
 		// When building RelWithDebInfo build:
 		// tntcxx/test/RingUnitTest.cpp: In function ‘int main()’:
-		// tntcxx/test/RingUnitTest.cpp:247:19: error: array subscript [0, 0] is outside array bounds of ‘Test [1]’ [-Werror=array-bounds]
+		// tntcxx/test/RingUnitTest.cpp:247:19: error: array subscript
+		// [0, 0] is outside array bounds of ‘Test [1]’
+		// [-Werror=array-bounds]
 		//  247 |    r1[0].rgAdd(&r1[i], true);
 		//      |                 ~~^
-		if (i >= SIZE1) abort();
+		if (i >= SIZE1)
+			abort();
 
 		if (i > 0)
 			r1[0].rgAdd(&r1[i], true);
@@ -271,7 +280,8 @@ static void test_swap()
 	checkRing(&r2[0], list2);
 }
 
-int main()
+int
+main()
 {
 	simple();
 

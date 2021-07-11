@@ -42,16 +42,17 @@ struct ObjHolder {
 	char data[MAX_OBJECT_SIZE];
 
 	ObjHolder() = default;
-	ObjHolder(const ObjHolder&) = delete;
-	ObjHolder& operator=(const ObjHolder&) = delete;
+	ObjHolder(const ObjHolder &) = delete;
+	ObjHolder &operator=(const ObjHolder &) = delete;
 	~ObjHolder() noexcept { destroy(); }
 
 	template <class T, class... ARGS>
-	void create(ARGS&&... args)
+	void create(ARGS &&...args)
 	{
 		static_assert(sizeof(T) <= sizeof(data));
-		T* ptr = new (data) T(std::forward<ARGS>(args)...);
-		assert(ptr == reinterpret_cast<T*>(data)); (void)ptr;
+		T *ptr = new (data) T(std::forward<ARGS>(args)...);
+		assert(ptr == reinterpret_cast<T *>(data));
+		(void)ptr;
 		if constexpr (std::is_trivially_destructible_v<T>)
 			destroy_f = nullptr;
 		else
@@ -66,7 +67,7 @@ struct ObjHolder {
 	template <class T>
 	T &get()
 	{
-		return *reinterpret_cast<T*>(data);
+		return *reinterpret_cast<T *>(data);
 	}
 };
 

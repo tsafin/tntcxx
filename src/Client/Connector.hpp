@@ -29,21 +29,22 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+#include "../Utils/Timer.hpp"
 #include "Connection.hpp"
 #include "DefaultNetProvider.hpp"
-#include "../Utils/Timer.hpp"
 
-template<class BUFFER, class NetProvider = DefaultNetProvider<BUFFER, NetworkEngine>>
+template <class BUFFER,
+	  class NetProvider = DefaultNetProvider<BUFFER, NetworkEngine>>
 class Connector
 {
 public:
 	Connector();
 	~Connector();
-	Connector(const Connector& connector) = delete;
-	Connector& operator = (const Connector& connector) = delete;
+	Connector(const Connector &connector) = delete;
+	Connector &operator=(const Connector &connector) = delete;
 
 	int connect(Connection<BUFFER, NetProvider> &conn,
-		    const std::string_view& addr, unsigned port,
+		    const std::string_view &addr, unsigned port,
 		    size_t timeout = DEFAULT_CONNECT_TIMEOUT);
 	void close(Connection<BUFFER, NetProvider> &conn);
 
@@ -51,7 +52,7 @@ public:
 		 int timeout = 0);
 	void waitAll(Connection<BUFFER, NetProvider> &conn, rid_t *futures,
 		     size_t future_count, int timeout = 0);
-	Connection<BUFFER, NetProvider>* waitAny(int timeout = 0);
+	Connection<BUFFER, NetProvider> *waitAny(int timeout = 0);
 
 	/**
 	 * Add to @m_ready_to_read queue and parse response.
@@ -61,6 +62,7 @@ public:
 	void readyToSend(Connection<BUFFER, NetProvider> &conn);
 
 	constexpr static size_t DEFAULT_CONNECT_TIMEOUT = 2;
+
 private:
 	NetProvider m_NetProvider;
 	/**
@@ -70,26 +72,28 @@ private:
 	struct rlist m_ready_to_read;
 };
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 Connector<BUFFER, NetProvider>::Connector() : m_NetProvider()
 {
 	rlist_create(&m_ready_to_read);
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 Connector<BUFFER, NetProvider>::~Connector()
 {
 	assert(rlist_empty(&m_ready_to_read));
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 int
 Connector<BUFFER, NetProvider>::connect(Connection<BUFFER, NetProvider> &conn,
-					const std::string_view& addr,
+					const std::string_view &addr,
 					unsigned port, size_t timeout)
 {
 	if (conn.socket >= 0 && m_NetProvider.check(conn)) {
-		LOG_ERROR("Current connection to ", conn.socket, " is alive! "
+		LOG_ERROR(
+			"Current connection to ", conn.socket,
+			" is alive! "
 			"Please close it before connecting to the new address");
 		return -1;
 	}
@@ -102,20 +106,20 @@ Connector<BUFFER, NetProvider>::connect(Connection<BUFFER, NetProvider> &conn,
 	return 0;
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
 Connector<BUFFER, NetProvider>::close(Connection<BUFFER, NetProvider> &conn)
 {
 	m_NetProvider.close(conn);
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 int
 Connector<BUFFER, NetProvider>::wait(Connection<BUFFER, NetProvider> &conn,
 				     rid_t future, int timeout)
 {
 	LOG_DEBUG("Waiting for the future ", future, " with timeout ", timeout);
-	Timer timer{timeout};
+	Timer timer { timeout };
 	timer.start();
 	while (hasDataToDecode(conn)) {
 		if (conn.status.is_failed) {
@@ -129,12 +133,12 @@ Connector<BUFFER, NetProvider>::wait(Connection<BUFFER, NetProvider> &conn,
 		if (rc == DECODE_NEEDMORE)
 			break;
 	}
-	if (! m_NetProvider.check(conn)) {
+	if (!m_NetProvider.check(conn)) {
 		LOG_ERROR("Connection has been lost: ", conn.getError(),
 			  ". Please re-connect to the host");
 		return -1;
 	}
-	while (! conn.futureIsReady(future) && !timer.isExpired()) {
+	while (!conn.futureIsReady(future) && !timer.isExpired()) {
 		if (m_NetProvider.wait(timeout - timer.elapsed()) != 0) {
 			return -1;
 		}
@@ -153,7 +157,7 @@ Connector<BUFFER, NetProvider>::wait(Connection<BUFFER, NetProvider> &conn,
 			}
 		}
 	}
-	if (! conn.futureIsReady(future)) {
+	if (!conn.futureIsReady(future)) {
 		LOG_ERROR("Connection has been timed out: future ", future,
 			  " is not ready");
 		return -1;
@@ -162,35 +166,38 @@ Connector<BUFFER, NetProvider>::wait(Connection<BUFFER, NetProvider> &conn,
 	return 0;
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
 Connector<BUFFER, NetProvider>::waitAll(Connection<BUFFER, NetProvider> &conn,
 					rid_t *futures, size_t future_count,
 					int timeout)
 {
-	Timer timer{timeout};
+	Timer timer { timeout };
 	timer.start();
 	for (size_t i = 0; i < future_count && !timer.isExpired(); ++i) {
 		if (wait(conn, futures[i], timeout - timer.elapsed()) != 0) {
-			conn.setError("Failed to poll: " + std::to_string(errno));
+			conn.setError("Failed to poll: " +
+				      std::to_string(errno));
 			return;
 		}
 		if (conn.status.is_failed) {
-			LOG_ERROR("wait() on connection ", &conn, ' ', conn.getError(), " has failed:");
+			LOG_ERROR("wait() on connection ", &conn, ' ',
+				  conn.getError(), " has failed:");
 		}
 		if (timer.isExpired()) {
-			LOG_WARNING("waitAll() is timed out! Only ", i, " futures are handled");
+			LOG_WARNING("waitAll() is timed out! Only ", i,
+				    " futures are handled");
 			return;
 		}
 	}
 }
 
-//std::optional with Connection&
-template<class BUFFER, class NetProvider>
+// std::optional with Connection&
+template <class BUFFER, class NetProvider>
 Connection<BUFFER, NetProvider> *
 Connector<BUFFER, NetProvider>::waitAny(int timeout)
 {
-	Timer timer{timeout};
+	Timer timer { timeout };
 	timer.start();
 	while (rlist_empty(&m_ready_to_read) && !timer.isExpired()) {
 		m_NetProvider.wait(timeout - timer.elapsed());
@@ -206,18 +213,20 @@ Connector<BUFFER, NetProvider>::waitAny(int timeout)
 	return conn;
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
-Connector<BUFFER, NetProvider>::readyToSend(Connection<BUFFER, NetProvider> &conn)
+Connector<BUFFER, NetProvider>::readyToSend(
+	Connection<BUFFER, NetProvider> &conn)
 {
 	m_NetProvider.readyToSend(conn);
 }
 
-template<class BUFFER, class NetProvider>
+template <class BUFFER, class NetProvider>
 void
-Connector<BUFFER, NetProvider>::readyToDecode(Connection<BUFFER, NetProvider> &conn)
+Connector<BUFFER, NetProvider>::readyToDecode(
+	Connection<BUFFER, NetProvider> &conn)
 {
-	//assert(rlist_empty(&m_ready_to_read));
+	// assert(rlist_empty(&m_ready_to_read));
 	rlist_add_tail(&m_ready_to_read, &conn.m_in_read);
 	conn.status.is_ready_to_decode = true;
 }

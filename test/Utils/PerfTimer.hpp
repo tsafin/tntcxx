@@ -32,17 +32,12 @@
 
 #include <chrono>
 
-class PerfTimer {
+class PerfTimer
+{
 public:
 	PerfTimer() {};
-	void start()
-	{
-		m_start = std::chrono::high_resolution_clock::now();
-	}
-	void stop()
-	{
-		m_finish = std::chrono::high_resolution_clock::now();
-	}
+	void start() { m_start = std::chrono::high_resolution_clock::now(); }
+	void stop() { m_finish = std::chrono::high_resolution_clock::now(); }
 	double result() const
 	{
 		using namespace std::chrono;

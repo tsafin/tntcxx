@@ -39,12 +39,13 @@ namespace wrap {
  * A pair data+size for convenient append to a buffer.
  */
 struct Data {
-	const char* data;
+	const char *data;
 	size_t size;
 
 	Data(const char *adata, size_t asize) : data(adata), size(asize) {}
 	template <class CONT>
-	Data(const CONT& cont) : data(std::data(cont)), size(std::size(cont)) {}
+	Data(const CONT &cont) : data(std::data(cont)), size(std::size(cont))
+	{}
 };
 
 /**

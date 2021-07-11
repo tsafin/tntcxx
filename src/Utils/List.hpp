@@ -142,6 +142,7 @@ template <class Elem, class Tag>
 class alignas(LIST_ALIGN) List
 {
 	static_assert(std::is_base_of_v<ListLink<Elem, Tag>, Elem>, "Must be!");
+
 public:
 	using ListTag_t = Tag;
 
@@ -149,28 +150,28 @@ public:
 	List() noexcept;
 
 	// There's no way to copy an intrusive list.
-	List(const List&) = delete;
-	List& operator=(const List&) = delete;
+	List(const List &) = delete;
+	List &operator=(const List &) = delete;
 
 	// Move all elements of another list to this list.
-	List(List&& list) noexcept;
+	List(List &&list) noexcept;
 
 	// Swap elements with elements of another list.
-	List& operator=(List&& list) noexcept;
+	List &operator=(List &&list) noexcept;
 
 	// Detach head of the list. The list becomes headless.
 	~List() noexcept;
 
 	// Insert an element to (back ? the end : the beginning) of this list.
 	// If the element is in (another) list - it is removed first.
-	void insert(Elem& elem, bool back = false) noexcept;
+	void insert(Elem &elem, bool back = false) noexcept;
 
 	// Insert all elements to (back ? the end : the beginning) of this list.
 	// Given list becomes empty.
-	void insert(List& list, bool back = false) noexcept;
+	void insert(List &list, bool back = false) noexcept;
 
 	// Swap the contents of two lists.
-	void swap(List& list) noexcept;
+	void swap(List &list) noexcept;
 
 	// Detach head of the list. The list becomes empty, all elements
 	// remain in headless list.
@@ -181,20 +182,20 @@ public:
 
 	// Get the first element in list. The list must not be empty.
 	// But if (invert == true) get the last element in list.
-	Elem& first(bool invert = false) noexcept;
-	const Elem& first(bool invert = false) const noexcept;
+	Elem &first(bool invert = false) noexcept;
+	const Elem &first(bool invert = false) const noexcept;
 
 	// Get the last element in list. The list must not be empty.
 	// But if (invert == true) get the first element in list.
-	Elem& last(bool invert = false) noexcept;
-	const Elem& last(bool invert = false) const noexcept;
+	Elem &last(bool invert = false) noexcept;
+	const Elem &last(bool invert = false) const noexcept;
 
 	// STL-like aliases.
 	bool empty() const noexcept { return isEmpty(); }
-	Elem& front() noexcept { return first(); }
-	const Elem& front() const noexcept { return first(); }
-	Elem& back() noexcept { return last(); }
-	const Elem& back() const noexcept { return last(); }
+	Elem &front() noexcept { return first(); }
+	const Elem &front() const noexcept { return first(); }
+	Elem &back() noexcept { return last(); }
+	const Elem &back() const noexcept { return last(); }
 
 	// Debug check for error, 0 if success.
 	int selfCheck() const noexcept;
@@ -207,13 +208,13 @@ private:
 		: std::iterator<std::bidirectional_iterator_tag, IElem>
 	{
 	public:
-		IElem& operator*() const noexcept;
+		IElem &operator*() const noexcept;
 		IElem *operator->() const noexcept;
-		bool operator==(const iterator_common& aItr) const noexcept;
-		bool operator!=(const iterator_common& aItr) const noexcept;
-		iterator_common& operator++() noexcept;
+		bool operator==(const iterator_common &aItr) const noexcept;
+		bool operator!=(const iterator_common &aItr) const noexcept;
+		iterator_common &operator++() noexcept;
 		iterator_common operator++(int) noexcept;
-		iterator_common& operator--() noexcept;
+		iterator_common &operator--() noexcept;
 		iterator_common operator--(int) noexcept;
 
 	private:
@@ -241,8 +242,8 @@ private:
 	Ring m_Ring;
 	void *padding2;
 
-	static Elem& elem(Ring& ring) noexcept;
-	static const Elem& elem(const Ring& ring) noexcept;
+	static Elem &elem(Ring &ring) noexcept;
+	static const Elem &elem(const Ring &ring) noexcept;
 };
 
 /**
@@ -252,7 +253,8 @@ private:
  *  ListLinks must be used for element linking.
  */
 template <class Elem, class Tag>
-class alignas(LINK_ALIGN) ListLink : private Ring {
+class alignas(LINK_ALIGN) ListLink : private Ring
+{
 public:
 	// Create a detached link.
 	ListLink() noexcept;
@@ -262,17 +264,17 @@ public:
 	ListLink(ListLink &link, bool back) noexcept;
 
 	// Add the item to the (back ? end : beginning) of the list.
-	explicit ListLink(List<Elem, Tag>& list, bool back = false) noexcept;
+	explicit ListLink(List<Elem, Tag> &list, bool back = false) noexcept;
 
 	// Copy/assign are deleted. The constructor above or move must be used.
 	ListLink(const ListLink &link) = delete;
-	ListLink& operator=(const ListLink &link) = delete;
+	ListLink &operator=(const ListLink &link) = delete;
 
 	// Add to the same list after given node.
 	ListLink(ListLink &&link) noexcept;
 
 	// Add to the same list after given node.
-	ListLink& operator=(ListLink&& link) noexcept;
+	ListLink &operator=(ListLink &&link) noexcept;
 
 	// Auto remove from list (if in).
 	~ListLink() noexcept;
@@ -288,13 +290,13 @@ private:
  * @tparam Elem - element of list.
  */
 template <class Elem>
-class LinkSelector {
+class LinkSelector
+{
 public:
-
 	// Insert an element (back ? before : after) this element.
 	// If the element is already in (another) list - it is removed first.
 	template <class Tag>
-	void insert(Elem& elem, bool back = false) noexcept;
+	void insert(Elem &elem, bool back = false) noexcept;
 
 	// Remove this element from list. Has no effect for already detached.
 	template <class Tag>
@@ -302,7 +304,10 @@ public:
 
 	// Alias for remove..
 	template <class Tag>
-	void unlink() noexcept { remove <Tag>(); }
+	void unlink() noexcept
+	{
+		remove<Tag>();
+	}
 
 	// Return true if the element not in a list.
 	template <class Tag>
@@ -321,18 +326,18 @@ public:
 	// Go to the next element. Must be in list, not last.
 	// But if (invert == true) behaves list prev().
 	template <class Tag>
-	Elem& next(bool invert = false) noexcept;
+	Elem &next(bool invert = false) noexcept;
 
 	template <class Tag>
-	const Elem& next(bool invert = false) const noexcept;
+	const Elem &next(bool invert = false) const noexcept;
 
 	// Go to the previous element. Must be in list, not first.
 	// But if (invert == true) behaves list next().
 	template <class Tag>
-	Elem& prev(bool invert = false) noexcept;
+	Elem &prev(bool invert = false) noexcept;
 
 	template <class Tag>
-	const Elem& prev(bool invert = false) const noexcept;
+	const Elem &prev(bool invert = false) const noexcept;
 
 	// Debug check for error, 0 if success.
 	template <class Tag>
@@ -340,16 +345,16 @@ public:
 
 private:
 	template <class Tag>
-	Ring& ring() noexcept;
+	Ring &ring() noexcept;
 
 	template <class Tag>
-	const Ring& ring() const noexcept;
+	const Ring &ring() const noexcept;
 
 	template <class Tag>
-	static Elem& elem(Ring& ring) noexcept;
+	static Elem &elem(Ring &ring) noexcept;
 
 	template <class Tag>
-	static const Elem& elem(const Ring& ring) noexcept;
+	static const Elem &elem(const Ring &ring) noexcept;
 };
 
 /**
@@ -366,14 +371,14 @@ public:
 	SingleLink() = default;
 
 	// Add to the same list (back ? before : after) given node.
-	SingleLink(SingleLink& link, bool back) noexcept;
+	SingleLink(SingleLink &link, bool back) noexcept;
 
 	// Add the item to the (back ? end : beginning) of the list.
-	explicit SingleLink(List<Elem>& list, bool back = false) noexcept;
+	explicit SingleLink(List<Elem> &list, bool back = false) noexcept;
 
 	// Insert an element (back ? before : after) this element.
 	// If the element is already in (another) list - it is removed first.
-	void insert(Elem& elem, bool back = false) noexcept;
+	void insert(Elem &elem, bool back = false) noexcept;
 
 	// Remove this element from list. Has no effect for already detached.
 	void remove() noexcept;
@@ -394,13 +399,13 @@ public:
 
 	// Go to the next element. Must be in list, not last.
 	// But if (invert == true) behaves list prev().
-	Elem& next(bool invert = false) noexcept;
-	const Elem& next(bool invert = false) const noexcept;
+	Elem &next(bool invert = false) noexcept;
+	const Elem &next(bool invert = false) const noexcept;
 
 	// Go to the previous element. Must be in list, not first.
 	// But if (invert == true) behaves list next().
-	Elem& prev(bool invert = false) noexcept;
-	const Elem& prev(bool invert = false) const noexcept;
+	Elem &prev(bool invert = false) noexcept;
+	const Elem &prev(bool invert = false) const noexcept;
 
 	// Debug check for error, 0 if success.
 	int selfCheck() const noexcept;
@@ -417,8 +422,9 @@ private:
  * struct TplObject : tnt::SingleLink<TplObject<T>> {
  * 	bool check()
  * 	{
- * 		return isDetached(); // error: there are no arguments to ‘isDetached’ that depend on a template parameter,..
- * 		return this->isDetached(); // ok..
+ * 		return isDetached(); // error: there are no arguments to
+ * ‘isDetached’ that depend on a template parameter,.. return
+ * this->isDetached(); // ok..
  * 	}
  * };
  * TplObject<int> a;
@@ -429,15 +435,15 @@ private:
  * 	using SingleLink<TplObject<T>::isDetached; // declare one method.
  * 	USING_LIST_LINK_METHODS(SingleLink<TplObject<T>>); // for all methods.
  */
-#define USING_LIST_LINK_METHODS(BASE) \
-	using BASE::insert; \
-	using BASE::remove; \
-	using BASE::unlink; \
-	using BASE::isDetached; \
-	using BASE::isFirst; \
-	using BASE::isLast; \
-	using BASE::next; \
-	using BASE::prev; \
+#define USING_LIST_LINK_METHODS(BASE)                                          \
+	using BASE::insert;                                                    \
+	using BASE::remove;                                                    \
+	using BASE::unlink;                                                    \
+	using BASE::isDetached;                                                \
+	using BASE::isFirst;                                                   \
+	using BASE::isLast;                                                    \
+	using BASE::next;                                                      \
+	using BASE::prev;                                                      \
 	using BASE::selfCheck
 
 /////////////////////////////////////////////////////////////////////
@@ -448,16 +454,16 @@ template <class Elem, class Tag>
 inline List<Elem, Tag>::List() noexcept : m_Ring(0)
 {
 	static_assert(sizeof(List) == LIST_ALIGN, "Align?");
-	assert((uintptr_t) this % LIST_ALIGN == 0);
-	assert((uintptr_t) &m_Ring % LINK_ALIGN == sizeof(void *));
+	assert((uintptr_t)this % LIST_ALIGN == 0);
+	assert((uintptr_t)&m_Ring % LINK_ALIGN == sizeof(void *));
 }
 
 template <class Elem, class Tag>
-inline List<Elem, Tag>::List(List&& list) noexcept
+inline List<Elem, Tag>::List(List &&list) noexcept
 {
 	static_assert(sizeof(List) == LIST_ALIGN, "Align?");
 	assert((uintptr_t)this % LIST_ALIGN == 0);
-	assert((uintptr_t)&m_Ring % LINK_ALIGN == sizeof(void*));
+	assert((uintptr_t)&m_Ring % LINK_ALIGN == sizeof(void *));
 
 	list.m_Ring.rgAdd(&m_Ring);
 	list.m_Ring.rgRemove();
@@ -465,7 +471,8 @@ inline List<Elem, Tag>::List(List&& list) noexcept
 }
 
 template <class Elem, class Tag>
-inline List<Elem, Tag>& List<Elem, Tag>::operator=(List&& list) noexcept
+inline List<Elem, Tag> &
+List<Elem, Tag>::operator=(List &&list) noexcept
 {
 	m_Ring.rgSwap(&list.m_Ring);
 	return *this;
@@ -478,15 +485,17 @@ inline List<Elem, Tag>::~List() noexcept
 }
 
 template <class Elem, class Tag>
-inline void List<Elem, Tag>::insert(Elem& elem, bool back) noexcept
+inline void
+List<Elem, Tag>::insert(Elem &elem, bool back) noexcept
 {
-	Ring& ring = static_cast<ListLink<Elem, Tag>&>(elem);
+	Ring &ring = static_cast<ListLink<Elem, Tag> &>(elem);
 	ring.rgRemove();
 	m_Ring.rgAdd(&ring, back);
 }
 
 template <class Elem, class Tag>
-inline void List<Elem, Tag>::insert(List& list, bool back) noexcept
+inline void
+List<Elem, Tag>::insert(List &list, bool back) noexcept
 {
 	m_Ring.rgJoin(&list.m_Ring, !back);
 	list.m_Ring.rgRemove();
@@ -494,96 +503,110 @@ inline void List<Elem, Tag>::insert(List& list, bool back) noexcept
 }
 
 template <class Elem, class Tag>
-inline void List<Elem, Tag>::swap(List& list) noexcept
+inline void
+List<Elem, Tag>::swap(List &list) noexcept
 {
 	m_Ring.rgSwap(&list.m_Ring);
 }
 
 template <class Elem, class Tag>
-inline void List<Elem, Tag>::clear() noexcept
+inline void
+List<Elem, Tag>::clear() noexcept
 {
 	m_Ring.rgRemove();
 	m_Ring.rgInit();
 }
 
 template <class Elem, class Tag>
-inline bool List<Elem, Tag>::isEmpty() const noexcept
+inline bool
+List<Elem, Tag>::isEmpty() const noexcept
 {
 	return m_Ring.rgIsMono();
 }
 
 template <class Elem, class Tag>
-inline Elem& List<Elem, Tag>::first(bool invert) noexcept
+inline Elem &
+List<Elem, Tag>::first(bool invert) noexcept
 {
 	assert(!isEmpty());
 	return elem(*m_Ring.rgNeigh(!invert));
 }
 
 template <class Elem, class Tag>
-inline const Elem& List<Elem, Tag>::first(bool invert) const noexcept
+inline const Elem &
+List<Elem, Tag>::first(bool invert) const noexcept
 {
 	assert(!isEmpty());
 	return elem(*m_Ring.rgNeigh(!invert));
 }
 
 template <class Elem, class Tag>
-inline Elem& List<Elem, Tag>::last(bool invert) noexcept
+inline Elem &
+List<Elem, Tag>::last(bool invert) noexcept
 {
 	assert(!isEmpty());
 	return elem(*m_Ring.rgNeigh(invert));
 }
 
 template <class Elem, class Tag>
-inline const Elem& List<Elem, Tag>::last(bool invert) const noexcept
+inline const Elem &
+List<Elem, Tag>::last(bool invert) const noexcept
 {
 	assert(!isEmpty());
 	return elem(*m_Ring.rgNeigh(invert));
 }
 
 template <class Elem, class Tag>
-inline int List<Elem, Tag>::selfCheck() const noexcept
+inline int
+List<Elem, Tag>::selfCheck() const noexcept
 {
 	return m_Ring.rgSelfCheck();
 }
 
 template <class Elem, class Tag>
 template <class IElem, class IRing>
-inline List<Elem, Tag>::iterator_common<IElem, IRing>::iterator_common(IRing *aRing) noexcept
+inline List<Elem, Tag>::iterator_common<IElem, IRing>::iterator_common(
+	IRing *aRing) noexcept
 	: m_Ring(aRing)
-{
-}
+{}
 
 template <class Elem, class Tag>
 template <class IElem, class IRing>
-inline IElem& List<Elem, Tag>::iterator_common<IElem, IRing>::operator*() const noexcept
+inline IElem &
+List<Elem, Tag>::iterator_common<IElem, IRing>::operator*() const noexcept
 {
 	return elem(*m_Ring);
 }
 
 template <class Elem, class Tag>
 template <class IElem, class IRing>
-inline IElem *List<Elem, Tag>::iterator_common<IElem, IRing>::operator->() const noexcept
+inline IElem *
+List<Elem, Tag>::iterator_common<IElem, IRing>::operator->() const noexcept
 {
 	return &elem(*m_Ring);
 }
 
 template <class Elem, class Tag>
 template <class IElem, class IRing>
-inline bool List<Elem, Tag>::iterator_common<IElem, IRing>::operator==(const iterator_common& a) const noexcept
+inline bool
+List<Elem, Tag>::iterator_common<IElem, IRing>::operator==(
+	const iterator_common &a) const noexcept
 {
 	return m_Ring == a.m_Ring;
 }
 
 template <class Elem, class Tag>
 template <class IElem, class IRing>
-inline bool List<Elem, Tag>::iterator_common<IElem, IRing>::operator!=(const iterator_common& a) const noexcept
+inline bool
+List<Elem, Tag>::iterator_common<IElem, IRing>::operator!=(
+	const iterator_common &a) const noexcept
 {
 	return m_Ring != a.m_Ring;
 }
 
 template <class Elem, class Tag>
 template <class IElem, class IRing>
-inline typename List<Elem, Tag>::template iterator_common<IElem, IRing>&
+inline typename List<Elem, Tag>::template iterator_common<IElem, IRing> &
 List<Elem, Tag>::iterator_common<IElem, IRing>::operator++() noexcept
 {
 	m_Ring = m_Ring->rgNeigh(true);
@@ -602,7 +625,7 @@ List<Elem, Tag>::iterator_common<IElem, IRing>::operator++(int) noexcept
 
 template <class Elem, class Tag>
 template <class IElem, class IRing>
-inline typename List<Elem, Tag>::template iterator_common<IElem, IRing>&
+inline typename List<Elem, Tag>::template iterator_common<IElem, IRing> &
 List<Elem, Tag>::iterator_common<IElem, IRing>::operator--() noexcept
 {
 	m_Ring = m_Ring->rgNeigh(false);
@@ -620,55 +643,62 @@ List<Elem, Tag>::iterator_common<IElem, IRing>::operator--(int) noexcept
 }
 
 template <class Elem, class Tag>
-inline typename List<Elem, Tag>::iterator List<Elem, Tag>::begin() noexcept
+inline typename List<Elem, Tag>::iterator
+List<Elem, Tag>::begin() noexcept
 {
 	return iterator(m_Ring.rgNeigh(true));
 }
 
 template <class Elem, class Tag>
-inline typename List<Elem, Tag>::iterator List<Elem, Tag>::end() noexcept
+inline typename List<Elem, Tag>::iterator
+List<Elem, Tag>::end() noexcept
 {
 	return iterator(&m_Ring);
 }
 
 template <class Elem, class Tag>
-inline typename List<Elem, Tag>::const_iterator List<Elem, Tag>::begin() const noexcept
+inline typename List<Elem, Tag>::const_iterator
+List<Elem, Tag>::begin() const noexcept
 {
 	return const_iterator(m_Ring.rgNeigh(true));
 }
 
 template <class Elem, class Tag>
-inline typename List<Elem, Tag>::const_iterator List<Elem, Tag>::end() const noexcept
+inline typename List<Elem, Tag>::const_iterator
+List<Elem, Tag>::end() const noexcept
 {
 	return const_iterator(&m_Ring);
 }
 
 template <class Elem, class Tag>
-inline typename List<Elem, Tag>::const_iterator List<Elem, Tag>::cbegin() const noexcept
+inline typename List<Elem, Tag>::const_iterator
+List<Elem, Tag>::cbegin() const noexcept
 {
 	return const_iterator(m_Ring.rgNeigh(true));
 }
 
 template <class Elem, class Tag>
-inline typename List<Elem, Tag>::const_iterator List<Elem, Tag>::cend() const noexcept
+inline typename List<Elem, Tag>::const_iterator
+List<Elem, Tag>::cend() const noexcept
 {
 	return const_iterator(&m_Ring);
 }
 
 template <class Elem, class Tag>
-inline Elem& List<Elem, Tag>::elem(Ring& ring) noexcept
+inline Elem &
+List<Elem, Tag>::elem(Ring &ring) noexcept
 {
-	ListLink<Elem, Tag>& link =
-		static_cast<ListLink<Elem, Tag>&>(ring);
-	return static_cast<Elem&>(link);
+	ListLink<Elem, Tag> &link = static_cast<ListLink<Elem, Tag> &>(ring);
+	return static_cast<Elem &>(link);
 }
 
 template <class Elem, class Tag>
-inline const Elem& List<Elem, Tag>::elem(const Ring& ring) noexcept
+inline const Elem &
+List<Elem, Tag>::elem(const Ring &ring) noexcept
 {
-	const ListLink<Elem, Tag>& link =
-		static_cast<const ListLink<Elem, Tag>&>(ring);
-	return static_cast<const Elem&>(link);
+	const ListLink<Elem, Tag> &link =
+		static_cast<const ListLink<Elem, Tag> &>(ring);
+	return static_cast<const Elem &>(link);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -688,25 +718,27 @@ inline ListLink<Elem, Tag>::ListLink(ListLink &link, bool back) noexcept
 {
 	static_assert(sizeof(ListLink) == LINK_ALIGN, "Broken align?");
 	assert(!link.rgIsMono());
-	assert((uintptr_t) this % LINK_ALIGN == 0);
+	assert((uintptr_t)this % LINK_ALIGN == 0);
 }
 
 template <class Elem, class Tag>
-inline ListLink<Elem, Tag>::ListLink(List<Elem, Tag>& list, bool back) noexcept
+inline ListLink<Elem, Tag>::ListLink(List<Elem, Tag> &list, bool back) noexcept
 	: Ring(list.m_Ring, back)
 {
-	assert((uintptr_t) this % LINK_ALIGN == 0);
+	assert((uintptr_t)this % LINK_ALIGN == 0);
 }
 
 template <class Elem, class Tag>
-inline ListLink<Elem, Tag>::ListLink(ListLink&& link) noexcept : Ring(link, false)
+inline ListLink<Elem, Tag>::ListLink(ListLink &&link) noexcept
+	: Ring(link, false)
 {
 	static_assert(sizeof(ListLink) == LINK_ALIGN, "Broken align?");
-	assert((uintptr_t) this % LINK_ALIGN == 0);
+	assert((uintptr_t)this % LINK_ALIGN == 0);
 }
 
 template <class Elem, class Tag>
-inline ListLink<Elem, Tag>& ListLink<Elem, Tag>::operator=(ListLink&& link) noexcept
+inline ListLink<Elem, Tag> &
+ListLink<Elem, Tag>::operator=(ListLink &&link) noexcept
 {
 	rgRemove();
 	link.rgAdd(this);
@@ -719,23 +751,24 @@ inline ListLink<Elem, Tag>::~ListLink() noexcept
 	rgRemove();
 }
 
-
 /////////////////////////////////////////////////////////////////////
 //////////////////// LinkSelector Implementation ////////////////////
 /////////////////////////////////////////////////////////////////////
 
 template <class Elem>
 template <class Tag>
-inline void LinkSelector<Elem>::insert(Elem& elem, bool back) noexcept
+inline void
+LinkSelector<Elem>::insert(Elem &elem, bool back) noexcept
 {
-	Ring& add_ring = static_cast<ListLink<Elem, Tag>&>(elem);
+	Ring &add_ring = static_cast<ListLink<Elem, Tag> &>(elem);
 	add_ring.rgRemove();
 	ring<Tag>().rgAdd(&add_ring, back);
 }
 
 template <class Elem>
 template <class Tag>
-inline void LinkSelector<Elem>::remove() noexcept
+inline void
+LinkSelector<Elem>::remove() noexcept
 {
 	ring<Tag>().rgRemove();
 	ring<Tag>().rgInit();
@@ -743,28 +776,32 @@ inline void LinkSelector<Elem>::remove() noexcept
 
 template <class Elem>
 template <class Tag>
-inline bool LinkSelector<Elem>::isDetached() const noexcept
+inline bool
+LinkSelector<Elem>::isDetached() const noexcept
 {
 	return ring<Tag>().rgIsMono();
 }
 
 template <class Elem>
 template <class Tag>
-inline bool LinkSelector<Elem>::isFirst(bool invert) const noexcept
+inline bool
+LinkSelector<Elem>::isFirst(bool invert) const noexcept
 {
 	return (uintptr_t)ring<Tag>().rgNeigh(invert) % LINK_ALIGN != 0;
 }
 
 template <class Elem>
 template <class Tag>
-inline bool LinkSelector<Elem>::isLast(bool invert) const noexcept
+inline bool
+LinkSelector<Elem>::isLast(bool invert) const noexcept
 {
 	return (uintptr_t)ring<Tag>().rgNeigh(!invert) % LINK_ALIGN != 0;
 }
 
 template <class Elem>
 template <class Tag>
-inline Elem& LinkSelector<Elem>::next(bool invert) noexcept
+inline Elem &
+LinkSelector<Elem>::next(bool invert) noexcept
 {
 	assert(!isLast<Tag>(invert));
 	return elem<Tag>(*ring<Tag>().rgNeigh(!invert));
@@ -772,7 +809,8 @@ inline Elem& LinkSelector<Elem>::next(bool invert) noexcept
 
 template <class Elem>
 template <class Tag>
-inline const Elem& LinkSelector<Elem>::next(bool invert) const noexcept
+inline const Elem &
+LinkSelector<Elem>::next(bool invert) const noexcept
 {
 	assert(!isLast<Tag>(invert));
 	return elem<Tag>(*ring<Tag>().rgNeigh(!invert));
@@ -780,7 +818,8 @@ inline const Elem& LinkSelector<Elem>::next(bool invert) const noexcept
 
 template <class Elem>
 template <class Tag>
-inline Elem& LinkSelector<Elem>::prev(bool invert) noexcept
+inline Elem &
+LinkSelector<Elem>::prev(bool invert) noexcept
 {
 	assert(!isFirst<Tag>(invert));
 	return elem<Tag>(*ring<Tag>().rgNeigh(invert));
@@ -788,7 +827,8 @@ inline Elem& LinkSelector<Elem>::prev(bool invert) noexcept
 
 template <class Elem>
 template <class Tag>
-inline const Elem& LinkSelector<Elem>::prev(bool invert) const noexcept
+inline const Elem &
+LinkSelector<Elem>::prev(bool invert) const noexcept
 {
 	assert(!isFirst<Tag>(invert));
 	return elem<Tag>(*ring<Tag>().rgNeigh(invert));
@@ -796,43 +836,47 @@ inline const Elem& LinkSelector<Elem>::prev(bool invert) const noexcept
 
 template <class Elem>
 template <class Tag>
-inline int LinkSelector<Elem>::selfCheck() const noexcept
+inline int
+LinkSelector<Elem>::selfCheck() const noexcept
 {
 	return ring<Tag>().rgSelfCheck();
 }
 
 template <class Elem>
 template <class Tag>
-inline Ring& LinkSelector<Elem>::ring() noexcept
+inline Ring &
+LinkSelector<Elem>::ring() noexcept
 {
-	Elem& e = static_cast<Elem&>(*this);
-	return static_cast<ListLink<Elem, Tag>&>(e);
+	Elem &e = static_cast<Elem &>(*this);
+	return static_cast<ListLink<Elem, Tag> &>(e);
 }
 
 template <class Elem>
 template <class Tag>
-inline const Ring& LinkSelector<Elem>::ring() const noexcept
+inline const Ring &
+LinkSelector<Elem>::ring() const noexcept
 {
-	const Elem& e = static_cast<const Elem&>(*this);
-	return static_cast<const ListLink<Elem, Tag>&>(e);
+	const Elem &e = static_cast<const Elem &>(*this);
+	return static_cast<const ListLink<Elem, Tag> &>(e);
 }
 
 template <class Elem>
 template <class Tag>
-inline Elem& LinkSelector<Elem>::elem(Ring& ring) noexcept
+inline Elem &
+LinkSelector<Elem>::elem(Ring &ring) noexcept
 {
-	ListLink<Elem, Tag>& link =
-		static_cast<ListLink<Elem, Tag>&>(ring);
-	return static_cast<Elem&>(link);
+	ListLink<Elem, Tag> &link = static_cast<ListLink<Elem, Tag> &>(ring);
+	return static_cast<Elem &>(link);
 }
 
 template <class Elem>
 template <class Tag>
-inline const Elem& LinkSelector<Elem>::elem(const Ring& ring) noexcept
+inline const Elem &
+LinkSelector<Elem>::elem(const Ring &ring) noexcept
 {
-	const ListLink<Elem, Tag>& link =
-		static_cast<const ListLink<Elem, Tag>&>(ring);
-	return static_cast<const Elem&>(link);
+	const ListLink<Elem, Tag> &link =
+		static_cast<const ListLink<Elem, Tag> &>(ring);
+	return static_cast<const Elem &>(link);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -840,73 +884,81 @@ inline const Elem& LinkSelector<Elem>::elem(const Ring& ring) noexcept
 /////////////////////////////////////////////////////////////////////
 
 template <class Elem>
-inline SingleLink<Elem>::SingleLink(SingleLink& link, bool back) noexcept
+inline SingleLink<Elem>::SingleLink(SingleLink &link, bool back) noexcept
 	: ListLink<Elem, void>(link, back)
-{
-}
+{}
 
 template <class Elem>
-inline SingleLink<Elem>::SingleLink(List<Elem>& list, bool back) noexcept
+inline SingleLink<Elem>::SingleLink(List<Elem> &list, bool back) noexcept
 	: ListLink<Elem, void>(list, back)
-{
-}
+{}
 
 template <class Elem>
-inline void SingleLink<Elem>::insert(Elem& elem, bool back) noexcept
+inline void
+SingleLink<Elem>::insert(Elem &elem, bool back) noexcept
 {
 	Base_t::template insert<void>(elem, back);
 }
 
 template <class Elem>
-inline void SingleLink<Elem>::remove() noexcept
+inline void
+SingleLink<Elem>::remove() noexcept
 {
 	Base_t::template remove<void>();
 }
 
 template <class Elem>
-inline bool SingleLink<Elem>::isDetached() const noexcept
+inline bool
+SingleLink<Elem>::isDetached() const noexcept
 {
 	return Base_t::template isDetached<void>();
 }
 
 template <class Elem>
-inline bool SingleLink<Elem>::isFirst(bool invert) const noexcept
+inline bool
+SingleLink<Elem>::isFirst(bool invert) const noexcept
 {
 	return Base_t::template isFirst<void>(invert);
 }
 
 template <class Elem>
-inline bool SingleLink<Elem>::isLast(bool invert) const noexcept
+inline bool
+SingleLink<Elem>::isLast(bool invert) const noexcept
 {
 	return Base_t::template isLast<void>(invert);
 }
 
 template <class Elem>
-inline Elem& SingleLink<Elem>::next(bool invert) noexcept
+inline Elem &
+SingleLink<Elem>::next(bool invert) noexcept
 {
 	return Base_t::template next<void>(invert);
 }
 
 template <class Elem>
-inline const Elem& SingleLink<Elem>::next(bool invert) const noexcept
+inline const Elem &
+SingleLink<Elem>::next(bool invert) const noexcept
 {
 	return Base_t::template next<void>(invert);
 }
 
 template <class Elem>
-inline Elem& SingleLink<Elem>::prev(bool invert) noexcept
+inline Elem &
+SingleLink<Elem>::prev(bool invert) noexcept
 {
 	return Base_t::template prev<void>(invert);
 }
 
 template <class Elem>
-inline const Elem& SingleLink<Elem>::prev(bool invert) const noexcept
+inline const Elem &
+SingleLink<Elem>::prev(bool invert) const noexcept
 {
 	return Base_t::template prev<void>(invert);
 }
 
 template <class Elem>
-inline int SingleLink<Elem>::selfCheck() const noexcept
+inline int
+SingleLink<Elem>::selfCheck() const noexcept
 {
 	return Base_t::template selfCheck<void>();
 }

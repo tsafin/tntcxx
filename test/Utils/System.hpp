@@ -29,11 +29,11 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <wait.h>
 #include <sys/prctl.h>
+#include <unistd.h>
+#include <wait.h>
 
 int
 launchTarantool()
@@ -54,8 +54,9 @@ launchTarantool()
 		exit(EXIT_FAILURE);
 	}
 	if (getppid() != ppid_before_fork) {
-		fprintf(stderr, "Can't launch Tarantool: parent process exited "\
-				"just before prctl call");
+		fprintf(stderr,
+			"Can't launch Tarantool: parent process exited "
+			"just before prctl call");
 		exit(EXIT_FAILURE);
 	}
 	if (execlp("tarantool", "tarantool", "test_cfg.lua", NULL) == -1) {
@@ -66,7 +67,8 @@ launchTarantool()
 }
 
 int
-cleanDir() {
+cleanDir()
+{
 	pid_t pid = fork();
 	if (pid == -1) {
 		fprintf(stderr, "Failed to clean directory: fork failed! %s\n",
@@ -82,7 +84,8 @@ cleanDir() {
 		return -1;
 	}
 	if (execlp("/bin/sh", "/bin/sh", "-c", "rm *xlog *snap", NULL) == -1) {
-		fprintf(stderr, "Failed to clean directory: execlp failed! %s\n",
+		fprintf(stderr,
+			"Failed to clean directory: execlp failed! %s\n",
 			strerror(errno));
 	}
 	exit(EXIT_FAILURE);

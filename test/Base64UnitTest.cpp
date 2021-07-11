@@ -78,8 +78,7 @@ gen_src_strings()
 		std::cout << "\t\t\"";
 		for (size_t j = 0; j < 16; j++) {
 			uint8_t c = decmap[i * 16 + j];
-			std::cout << "\\"
-				  << static_cast<char>(('0' + (c >> 6)))
+			std::cout << "\\" << static_cast<char>(('0' + (c >> 6)))
 				  << static_cast<char>(('0' + ((c >> 3) & 0x7)))
 				  << static_cast<char>(('0' + (c & 0x7)));
 		}
@@ -89,8 +88,8 @@ gen_src_strings()
 
 // Encode `orig` an compare with `encoded`. Decode back and compare with `orig`.
 static void
-simple_test(const char *orig, size_t orig_size,
-	    const char *encoded, size_t encoded_size)
+simple_test(const char *orig, size_t orig_size, const char *encoded,
+	    size_t encoded_size)
 {
 	char buf[256];
 	fail_if(encoded_size > sizeof(buf));
@@ -106,17 +105,18 @@ simple_test(const char *orig, size_t orig_size,
 	}
 
 	{
-		auto [inp, out] = base64::decode(encoded, encoded + encoded_size, buf);
+		auto [inp, out] =
+			base64::decode(encoded, encoded + encoded_size, buf);
 		size_t processed_src = inp - encoded;
 		size_t processed_dst = out - buf;
 		fail_unless(processed_src == encoded_size);
-		fail_unless(processed_dst == base64::dec_size(encoded_size) ||
-			    processed_dst + 1 == base64::dec_size(encoded_size) ||
-			    processed_dst + 2 == base64::dec_size(encoded_size));
+		fail_unless(
+			processed_dst == base64::dec_size(encoded_size) ||
+			processed_dst + 1 == base64::dec_size(encoded_size) ||
+			processed_dst + 2 == base64::dec_size(encoded_size));
 		fail_unless(processed_dst == orig_size);
 		fail_unless(memcmp(buf, orig, processed_dst) == 0);
 	}
-
 }
 
 // Several tests that was generated with standard base64 utility.
@@ -153,7 +153,8 @@ forth_and_back_test(const char *orig, size_t orig_size)
 		decoded_size = out - buf2;
 		fail_unless(processed_src == encoded_size);
 		fail_unless(decoded_size == base64::dec_size(encoded_size) ||
-			    decoded_size + 1 == base64::dec_size(encoded_size) ||
+			    decoded_size + 1 ==
+				    base64::dec_size(encoded_size) ||
 			    decoded_size + 2 == base64::dec_size(encoded_size));
 		fail_unless(decoded_size == orig_size);
 		fail_unless(memcmp(buf2, orig, orig_size) == 0);
@@ -164,8 +165,8 @@ static void
 forth_and_back_tests()
 {
 	constexpr size_t K = 2;
-	constexpr size_t N[K] = {1024 * 1024, 128 * 1024}; // Number of runs.
-	constexpr size_t M[K] = {4, 128}; // Limit of string's length.
+	constexpr size_t N[K] = { 1024 * 1024, 128 * 1024 }; // Number of runs.
+	constexpr size_t M[K] = { 4, 128 }; // Limit of string's length.
 	char buf[M[K - 1]];
 
 	for (size_t k = 0; k < K; k++) {
@@ -179,13 +180,12 @@ forth_and_back_tests()
 }
 
 static void
-check_bad_ending(const char *enc,
-		 size_t expected_consumed, size_t expected_produced,
-		 const char *expected_dec)
+check_bad_ending(const char *enc, size_t expected_consumed,
+		 size_t expected_produced, const char *expected_dec)
 {
 	size_t enc_size = strlen(enc);
 	char res[256];
-	auto [cons_end,prod_end] = base64::decode(enc, enc + enc_size, res);
+	auto [cons_end, prod_end] = base64::decode(enc, enc + enc_size, res);
 	size_t real_cons = cons_end - enc;
 	size_t real_prod = prod_end - res;
 	fail_unless(expected_consumed == real_cons);
@@ -231,10 +231,10 @@ check_bad_endings()
 	check_bad_ending("//9", 2, 2, "\xff\xff");
 	check_bad_ending("//9=", 2, 2, "\xff\xff");
 	check_bad_ending("//9*", 2, 2, "\xff\xff");
-
 }
 
-int main()
+int
+main()
 {
 	gen_src_strings();
 	simple_tests();

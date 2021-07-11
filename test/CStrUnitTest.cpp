@@ -47,13 +47,15 @@ check_str(T t, const char *s)
 	fail_if(T::rnd_size % 8);
 	fail_if(sizeof(T::data) < T::rnd_size);
 }
-#define CHECK_MACRO_STR(S) fail_if(strlen(S) != TNT_CON_STR(S).size);	\
-			   fail_if(strcmp(S, TNT_CON_STR(S).data));	\
-			   check_str(TNT_CON_STR(S), S)
+#define CHECK_MACRO_STR(S)                                                     \
+	fail_if(strlen(S) != TNT_CON_STR(S).size);                             \
+	fail_if(strcmp(S, TNT_CON_STR(S).data));                               \
+	check_str(TNT_CON_STR(S), S)
 
-#define CHECK_LITER_STR(S) fail_if(strlen(S) != (S##_cs).size);	\
-			   fail_if(strcmp(S, (S##_cs).data));	\
-			   check_str((S##_cs), S)
+#define CHECK_LITER_STR(S)                                                     \
+	fail_if(strlen(S) != (S##_cs).size);                                   \
+	fail_if(strcmp(S, (S##_cs).data));                                     \
+	check_str((S##_cs), S)
 
 #ifndef TNT_DISABLE_STR_MACRO
 void
@@ -69,13 +71,15 @@ test_macro_str()
 	CHECK_MACRO_STR("A123456789B123456789C123456789C1");
 	CHECK_MACRO_STR("A123456789B123456789C123456789C12");
 	CHECK_MACRO_STR("A123456789B123456789C123456789C123");
-	CHECK_MACRO_STR("A123456789B123456789C123456789C123456789D123456789E123456789F12");
-	CHECK_MACRO_STR("A123456789B123456789C123456789C123456789D123456789E123456789F123");
+	CHECK_MACRO_STR("A123456789B123456789C123456789C123456789D123456789E123"
+			"456789F12");
+	CHECK_MACRO_STR("A123456789B123456789C123456789C123456789D123456789E123"
+			"456789F123");
 
 	auto a = TNT_CON_STR("abcdef");
-	auto b = a.subs(std::index_sequence<0, 2, 4>{});
+	auto b = a.subs(std::index_sequence<0, 2, 4> {});
 	check_str(b, "ace");
-	auto c = a.subs(std::index_sequence<1, 3, 5>{});
+	auto c = a.subs(std::index_sequence<1, 3, 5> {});
 	check_str(c, "bdf");
 	auto d = a.join(b).join(c);
 	check_str(d, "abcdefacebdf");
@@ -97,22 +101,27 @@ test_liter_str()
 	CHECK_LITER_STR("A123456789B123456789C123456789C1");
 	CHECK_LITER_STR("A123456789B123456789C123456789C12");
 	CHECK_LITER_STR("A123456789B123456789C123456789C123");
-	CHECK_LITER_STR("A123456789B123456789C123456789C123456789D123456789E123456789F12");
-	CHECK_LITER_STR("A123456789B123456789C123456789C123456789D123456789E123456789F123");
-	CHECK_LITER_STR("A123456789B123456789C123456789C123456789D123456789E123456789F1234");
-	CHECK_LITER_STR("A123456789B123456789C123456789C123456789D123456789E123456789F123456789");
+	CHECK_LITER_STR("A123456789B123456789C123456789C123456789D123456789E123"
+			"456789F12");
+	CHECK_LITER_STR("A123456789B123456789C123456789C123456789D123456789E123"
+			"456789F123");
+	CHECK_LITER_STR("A123456789B123456789C123456789C123456789D123456789E123"
+			"456789F1234");
+	CHECK_LITER_STR("A123456789B123456789C123456789C123456789D123456789E123"
+			"456789F123456789");
 
 	auto a = "abcdef"_cs;
-	auto b = a.subs(std::index_sequence<0, 2, 4>{});
+	auto b = a.subs(std::index_sequence<0, 2, 4> {});
 	check_str(b, "ace");
-	auto c = a.subs(std::index_sequence<1, 3, 5>{});
+	auto c = a.subs(std::index_sequence<1, 3, 5> {});
 	check_str(c, "bdf");
 	auto d = a.join(b).join(c);
 	check_str(d, "abcdefacebdf");
 }
 #endif
 
-int main()
+int
+main()
 {
 #ifndef TNT_DISABLE_STR_MACRO
 	test_macro_str();

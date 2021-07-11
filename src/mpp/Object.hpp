@@ -45,21 +45,22 @@ struct Object {
 	using BufferIterator_t = typename BUFFER::iterator;
 	using Mempool_t = MEMPOOL;
 
-	explicit Object(Mempool_t& pool) : m_Pool(pool) {}
+	explicit Object(Mempool_t &pool) : m_Pool(pool) {}
 	~Object() noexcept
 	{
 		while (m_Child != nullptr) {
 			Object *tmp = m_Child;
 			m_Child = m_Child->next;
-			Mempool_t& pool = tmp->m_Pool;
+			Mempool_t &pool = tmp->m_Pool;
 			tmp->~Object();
 			Object::operator delete(tmp, pool);
 		}
 	}
 
-	void* operator new(size_t size, Mempool_t &pool)
+	void *operator new(size_t size, Mempool_t &pool)
 	{
-		assert(size == sizeof(Object)); (void)size;
+		assert(size == sizeof(Object));
+		(void)size;
 		return pool.allocate();
 	}
 	void operator delete(void *ptr, Mempool_t &pool) noexcept
@@ -68,27 +69,27 @@ struct Object {
 	}
 
 	Value_t m_Value;
-	const BufferIterator_t& Where() const { return m_Position; }
+	const BufferIterator_t &Where() const { return m_Position; }
 
 private:
-	Object(const Object&) = delete;
-	void operator=(const Object&) = delete;
+	Object(const Object &) = delete;
+	void operator=(const Object &) = delete;
 
-	void* operator new(size_t) = delete;
-	void* operator new[](size_t) = delete;
-	void* operator new(size_t, const std::nothrow_t&) = delete;
-	void* operator new[](size_t, const std::nothrow_t&) = delete;
+	void *operator new(size_t) = delete;
+	void *operator new[](size_t) = delete;
+	void *operator new(size_t, const std::nothrow_t &) = delete;
+	void *operator new[](size_t, const std::nothrow_t &) = delete;
 	void operator delete(void *) = delete;
 	void operator delete[](void *) = delete;
 
 	Mempool_t &m_Pool;
 	BufferIterator_t m_Position;
 	Object *m_Next = nullptr;
-	Object *m_NextShortcut[2] = {nullptr, nullptr};
+	Object *m_NextShortcut[2] = { nullptr, nullptr };
 	Object *m_Child = nullptr;
 };
 
-template<class BUFFER>
+template <class BUFFER>
 using DefaultObjectMempool_t =
 	tnt::MempoolHolder<sizeof(Object<BUFFER, tnt::MempoolHolder<256>>)>;
 

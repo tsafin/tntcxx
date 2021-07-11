@@ -66,7 +66,13 @@ using tnt::CStr;
  * Simple helper for advancing standard iterators.
  */
 template <class ITR>
-ITR advance(ITR& itr, size_t n) { auto r = itr; std::advance(r, n); return r; }
+ITR
+advance(ITR &itr, size_t n)
+{
+	auto r = itr;
+	std::advance(r, n);
+	return r;
+}
 
 /**
  * Range is a pair of iterators (in general meaning, pointers for example)
@@ -84,7 +90,7 @@ struct RangeBase {
 	ITR1 m_begin;
 	ITR2 m_end;
 	ITR1 begin() const { return m_begin; }
-	const ITR2& end() const { return m_end; }
+	const ITR2 &end() const { return m_end; }
 	size_t size() const { return std::distance(m_begin, m_end); }
 };
 
@@ -109,28 +115,46 @@ struct ContiguousRange : IteratorRange<ITR1, ITR2, IS_FIXED_SIZE, N> {
 };
 
 template <class T>
-constexpr IteratorRange<const T&, const T&, false, 0>
-range(const T& begin, const T& end) { return {begin, end}; }
+constexpr IteratorRange<const T &, const T &, false, 0>
+range(const T &begin, const T &end)
+{
+	return { begin, end };
+}
 
 template <class T>
-constexpr ContiguousRange<T*, T*, false, 0>
-range(T* begin, T* end) { return {begin, end}; }
+constexpr ContiguousRange<T *, T *, false, 0>
+range(T *begin, T *end)
+{
+	return { begin, end };
+}
 
 template <class T>
-constexpr IteratorRange<const T&, T, false, 0>
-range(const T& begin, size_t n) { return {begin, advance(begin, n)}; }
+constexpr IteratorRange<const T &, T, false, 0>
+range(const T &begin, size_t n)
+{
+	return { begin, advance(begin, n) };
+}
 
 template <class T>
-constexpr ContiguousRange<T*, T*, false, 0>
-range(T* begin, size_t n) { return {begin, begin + n}; }
+constexpr ContiguousRange<T *, T *, false, 0>
+range(T *begin, size_t n)
+{
+	return { begin, begin + n };
+}
 
 template <size_t N, class T>
-constexpr IteratorRange<const T&, T, true, N>
-range(const T& begin) { return {begin, advance(begin, N)}; }
+constexpr IteratorRange<const T &, T, true, N>
+range(const T &begin)
+{
+	return { begin, advance(begin, N) };
+}
 
 template <size_t N, class T>
-constexpr ContiguousRange<T*, T*, true, N>
-range(T* begin) { return {begin, begin + N}; }
+constexpr ContiguousRange<T *, T *, true, N>
+range(T *begin)
+{
+	return { begin, begin + N };
+}
 
 /**
  * A group of specificators - as_str(..), as_bin(..), as_arr(..), as_map(..),
@@ -143,32 +167,32 @@ range(T* begin) { return {begin, begin + N}; }
  * Specificators also accept the same arguments as range(..), in that case
  * it's a synonym of as_xxx(range(...)).
  */
-#define DEFINE_ARRLIKE_WRAPPER(name)						\
-template <class T>								\
-struct name##_holder {								\
-	using type = T;								\
-	const T& value;								\
-};										\
-										\
-template <class... T>								\
-constexpr auto as_##name(const T&... t)						\
-{										\
-	if constexpr (sizeof ... (T) == 1) {					\
-		return name##_holder<T...>{t...};				\
-	} else {								\
-		using range_t = decltype(range(t...));				\
-		return name##_holder<range_t>(range(t...));			\
-	}									\
-}										\
-										\
-template <size_t N, class... T>							\
-constexpr auto as_##name(const T&... t)						\
-{										\
-	using range_t = decltype(range<N>(t...));				\
-	return name##_holder<range_t>(range<N>(t...));				\
-}										\
-										\
-struct forgot_to_add_semicolon
+#define DEFINE_ARRLIKE_WRAPPER(name)                                           \
+	template <class T>                                                     \
+	struct name##_holder {                                                 \
+		using type = T;                                                \
+		const T &value;                                                \
+	};                                                                     \
+                                                                               \
+	template <class... T>                                                  \
+	constexpr auto as_##name(const T &...t)                                \
+	{                                                                      \
+		if constexpr (sizeof...(T) == 1) {                             \
+			return name##_holder<T...> { t... };                   \
+		} else {                                                       \
+			using range_t = decltype(range(t...));                 \
+			return name##_holder<range_t>(range(t...));            \
+		}                                                              \
+	}                                                                      \
+                                                                               \
+	template <size_t N, class... T>                                        \
+	constexpr auto as_##name(const T &...t)                                \
+	{                                                                      \
+		using range_t = decltype(range<N>(t...));                      \
+		return name##_holder<range_t>(range<N>(t...));                 \
+	}                                                                      \
+                                                                               \
+	struct forgot_to_add_semicolon
 
 DEFINE_ARRLIKE_WRAPPER(str);
 DEFINE_ARRLIKE_WRAPPER(bin);
@@ -189,41 +213,48 @@ template <class T>
 struct ext_holder {
 	using type = T;
 	uint8_t ext_type;
-	const T& value;
+	const T &value;
 };
 
 template <class... T>
-auto as_ext(uint8_t type, T&&... t)
+auto
+as_ext(uint8_t type, T &&...t)
 {
 	if constexpr (sizeof...(T) == 1) {
-		return ext_holder<T...>{type, t...};
+		return ext_holder<T...> { type, t... };
 	} else {
 		using range_t = decltype(range(std::forward<T>(t)...));
-		return ext_holder<range_t>{type, range(std::forward<T>(t)...)};
+		return ext_holder<range_t> { type,
+					     range(std::forward<T>(t)...) };
 	}
 }
 
 template <size_t N, class... T>
-auto as_ext(uint8_t type, T&&... t)
+auto
+as_ext(uint8_t type, T &&...t)
 {
 	using range_t = decltype(range<N>(std::forward<T>(t)...));
-	return ext_holder<range_t>{type, range<N>(std::forward<T>(t)...)};
+	return ext_holder<range_t> { type, range<N>(std::forward<T>(t)...) };
 }
 
 /**
  * Specificator - track(..). Creates a wrapper track_holder that holds a value
  * and a range - a pair of iterators. The first iterator will be set to the
  * beginning of written msgpack object, the second - at the end of it.
-*/
+ */
 template <class T, class RANGE>
 struct track_holder {
 	using type = T;
-	const T& value;
-	RANGE& range;
+	const T &value;
+	RANGE &range;
 };
 
 template <class T, class RANGE>
-track_holder<T, RANGE> track(const T& t, RANGE& r) { return {t, r}; }
+track_holder<T, RANGE>
+track(const T &t, RANGE &r)
+{
+	return { t, r };
+}
 
 /**
  * Reserve is an object that specifies that some number of bytes must be skipped
@@ -245,15 +276,31 @@ struct Reserve<0> {
 };
 
 template <size_t N>
-Reserve<N> reserve() { return {}; }
+Reserve<N>
+reserve()
+{
+	return {};
+}
 
-inline Reserve<0> reserve(size_t n) { return {n}; }
+inline Reserve<0>
+reserve(size_t n)
+{
+	return { n };
+}
 
 template <size_t N, class RANGE>
-track_holder<Reserve<N>, RANGE> reserve(RANGE& r) { return {{}, r}; }
+track_holder<Reserve<N>, RANGE>
+reserve(RANGE &r)
+{
+	return { {}, r };
+}
 
 template <class RANGE>
-track_holder<Reserve<0>, RANGE> reserve(size_t n, RANGE& r) { return {{n}, r}; }
+track_holder<Reserve<0>, RANGE>
+reserve(size_t n, RANGE &r)
+{
+	return { { n }, r };
+}
 
 /**
  * Specificator - is_fixed(..). Creates a wrapper fixed_holder that holds
@@ -270,14 +317,22 @@ template <class T, class U>
 struct fixed_holder {
 	using type = T;
 	using hold_type = U;
-	const U& value;
+	const U &value;
 };
 
 template <class T, class U>
-fixed_holder<T, U> as_fixed(const U& u) { return {u}; }
+fixed_holder<T, U>
+as_fixed(const U &u)
+{
+	return { u };
+}
 
 template <class T>
-fixed_holder<T, T> as_fixed(const T& t) { return {t}; }
+fixed_holder<T, T>
+as_fixed(const T &t)
+{
+	return { t };
+}
 
 /**
  * Constants are types that have a constant value enclosed in type itself,
@@ -291,7 +346,8 @@ fixed_holder<T, T> as_fixed(const T& t) { return {t}; }
  * default.
  */
 #ifndef MPP_DISABLE_AS_CONST_MACRO
-#define MPP_AS_CONST(x) std::integral_constant<decltype(x), x>{}
+#define MPP_AS_CONST(x)                                                        \
+	std::integral_constant<decltype(x), x> {}
 #endif
 #ifndef TNT_DISABLE_STR_MACRO
 #define MPP_AS_CONSTR(x) TNT_CON_STR(x)
@@ -302,7 +358,8 @@ fixed_holder<T, T> as_fixed(const T& t) { return {t}; }
 #endif
 
 #ifdef MPP_USE_SHORT_CONST_MACROS
-#define as_const(x) std::integral_constant<decltype(x), x>{}
+#define as_const(x)                                                            \
+	std::integral_constant<decltype(x), x> {}
 #define as_constr(x) MPP_AS_CONSTR(x)
 #endif // #ifdef MPP_USE_SHORT_CONST_MACROS
 

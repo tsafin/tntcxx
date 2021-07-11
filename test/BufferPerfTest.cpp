@@ -1,18 +1,22 @@
+#include <cstring>
 #include <tuple>
 #include <utility>
-#include <cstring>
 
+#include "../src/Buffer/Buffer.hpp"
 #include "Utils/Out.hpp"
 #include "Utils/PerfTimer.hpp"
-#include "../src/Buffer/Buffer.hpp"
 
 constexpr size_t N = 16 * 1024 * 1024;
 
 struct alignas(2) SimpleData_t : std::tuple<uint8_t> {};
-using ComplexData_t = std::tuple<uint8_t,uint16_t,uint32_t,uint64_t>;
-struct VariadicData_t { uint8_t size; char data[15]; };
-constexpr size_t MAX_SIZE = std::max(
-	{sizeof(SimpleData_t), sizeof(ComplexData_t), sizeof(VariadicData_t)});
+using ComplexData_t = std::tuple<uint8_t, uint16_t, uint32_t, uint64_t>;
+struct VariadicData_t {
+	uint8_t size;
+	char data[15];
+};
+constexpr size_t MAX_SIZE =
+	std::max({ sizeof(SimpleData_t), sizeof(ComplexData_t),
+		   sizeof(VariadicData_t) });
 
 static_assert(sizeof(SimpleData_t) == 2, "Just for understanding");
 static_assert(sizeof(ComplexData_t) == 16, "Just for understanding");
@@ -31,11 +35,17 @@ struct StaticBuffer {
 	char *p = staticBuffer;
 
 	template <bool>
-	char *begin() const { return staticBuffer; }
+	char *begin() const
+	{
+		return staticBuffer;
+	}
 	template <bool>
-	char *end() const { return p; }
+	char *end() const
+	{
+		return p;
+	}
 	template <class T>
-	void addBack(T&& t)
+	void addBack(T &&t)
 	{
 		mempcpy(p, &t, sizeof(t));
 		p += sizeof(t);
@@ -49,21 +59,21 @@ struct StaticBuffer {
 
 template <size_t... I, class... T>
 void
-gen_helper(std::index_sequence<I...>, std::tuple<T...>& t)
+gen_helper(std::index_sequence<I...>, std::tuple<T...> &t)
 {
-	auto set = [](auto& t) { t = rand(); };
+	auto set = [](auto &t) { t = rand(); };
 	(set(std::get<I>(t)), ...);
 }
 
 template <class... T>
 void
-gen(std::tuple<T...>& t)
+gen(std::tuple<T...> &t)
 {
-	gen_helper(std::make_index_sequence<sizeof...(T)>{}, t);
+	gen_helper(std::make_index_sequence<sizeof...(T)> {}, t);
 }
 
 void
-gen(VariadicData_t& t)
+gen(VariadicData_t &t)
 {
 	t.size = 1 + rand() % sizeof(t.data);
 	for (size_t i = 0; i < t.size; i++)
@@ -72,21 +82,20 @@ gen(VariadicData_t& t)
 
 template <class... T>
 constexpr size_t
-dataSize(const std::tuple<T...>&)
+dataSize(const std::tuple<T...> &)
 {
 	return (sizeof(T) + ...);
 }
 
 template <class... T>
 constexpr size_t
-dataSize(const VariadicData_t& t)
+dataSize(const VariadicData_t &t)
 {
 	return t.size + 1;
 }
 
 template <class T, size_t N>
-size_t
-dataSizeTotal(T (&arr)[N])
+size_t dataSizeTotal(T (&arr)[N])
 {
 	size_t res = 0;
 	for (auto &x : arr)
@@ -106,20 +115,20 @@ dataSizeTotal(T *b, T *e)
 
 template <size_t... I, class... T>
 size_t
-dataCheckSumHelper(std::index_sequence<I...>, const std::tuple<T...>& t)
+dataCheckSumHelper(std::index_sequence<I...>, const std::tuple<T...> &t)
 {
-	return (std::get<I>(t) +  ...);
+	return (std::get<I>(t) + ...);
 }
 
 template <class... T>
 size_t
-dataCheckSum(const std::tuple<T...>& t)
+dataCheckSum(const std::tuple<T...> &t)
 {
-	return dataCheckSumHelper(std::make_index_sequence<sizeof...(T)>{}, t);
+	return dataCheckSumHelper(std::make_index_sequence<sizeof...(T)> {}, t);
 }
 
 size_t
-dataCheckSum(const VariadicData_t& t)
+dataCheckSum(const VariadicData_t &t)
 {
 	size_t res = t.size;
 	for (size_t i = 0; i < t.size; i++)
@@ -128,8 +137,7 @@ dataCheckSum(const VariadicData_t& t)
 }
 
 template <class T, size_t N>
-size_t
-dataCheckSumTotal(T (&arr)[N])
+size_t dataCheckSumTotal(T (&arr)[N])
 {
 	size_t res = 0;
 	for (auto &x : arr)
@@ -149,7 +157,7 @@ dataCheckSumTotal(T *b, T *e)
 
 template <class T>
 const char *
-dataName(const T&)
+dataName(const T &)
 {
 	static_assert(std::is_same_v<T, SimpleData_t> ||
 		      std::is_same_v<T, ComplexData_t> ||
@@ -164,44 +172,53 @@ dataName(const T&)
 }
 
 template <class CONT, size_t... I, class... T>
-void write_helper(CONT& c, std::index_sequence<I...>, const std::tuple<T...>& t)
+void
+write_helper(CONT &c, std::index_sequence<I...>, const std::tuple<T...> &t)
 {
 	(c.addBack(std::get<I>(t)), ...);
 }
 
 template <class CONT, class... T>
-void write(CONT &c, const std::tuple<T...>& t)
+void
+write(CONT &c, const std::tuple<T...> &t)
 {
-	write_helper(c, std::make_index_sequence<sizeof...(T)>{}, t);
+	write_helper(c, std::make_index_sequence<sizeof...(T)> {}, t);
 }
 
 template <class CONT>
-void write(CONT &c, VariadicData_t& t)
+void
+write(CONT &c, VariadicData_t &t)
 {
 	c.addBack(t.size);
-	c.addBack(wrap::Data{t.data, t.size});
+	c.addBack(wrap::Data { t.data, t.size });
 }
 
 template <class T>
-void read_one(StaticBuffer &, char *&itr, T &t)
+void
+read_one(StaticBuffer &, char *&itr, T &t)
 {
 	std::memcpy(&t, &*itr, sizeof(t));
 	itr += sizeof(t);
 }
 
 template <size_t N, class ALL, class T>
-void read_one(tnt::Buffer<N, ALL> &b, typename tnt::Buffer<N, ALL>::iterator &itr, T&t)
+void
+read_one(tnt::Buffer<N, ALL> &b, typename tnt::Buffer<N, ALL>::iterator &itr,
+	 T &t)
 {
 	b.read(itr, t);
 }
 
 template <size_t N, class ALL, class T>
-void read_one(tnt::Buffer<N, ALL> &b, typename tnt::Buffer<N, ALL>::light_iterator &itr, T&t)
+void
+read_one(tnt::Buffer<N, ALL> &b,
+	 typename tnt::Buffer<N, ALL>::light_iterator &itr, T &t)
 {
 	b.read(itr, t);
 }
 
-void read_one(StaticBuffer &, char *&itr, VariadicData_t &t)
+void
+read_one(StaticBuffer &, char *&itr, VariadicData_t &t)
 {
 	t.size = *itr;
 	itr += 1;
@@ -210,46 +227,53 @@ void read_one(StaticBuffer &, char *&itr, VariadicData_t &t)
 }
 
 template <size_t N, class ALL>
-void read_one(tnt::Buffer<N, ALL> &b, typename tnt::Buffer<N, ALL>::iterator &itr, VariadicData_t &t)
+void
+read_one(tnt::Buffer<N, ALL> &b, typename tnt::Buffer<N, ALL>::iterator &itr,
+	 VariadicData_t &t)
 {
 	b.read(itr, t.size);
 	b.read(itr, t.data, t.size);
 }
 
 template <size_t N, class ALL>
-void read_one(tnt::Buffer<N, ALL> &b, typename tnt::Buffer<N, ALL>::light_iterator &itr, VariadicData_t &t)
+void
+read_one(tnt::Buffer<N, ALL> &b,
+	 typename tnt::Buffer<N, ALL>::light_iterator &itr, VariadicData_t &t)
 {
 	b.read(itr, t.size);
 	b.read(itr, t.data, t.size);
 }
 
 template <class CONT, class ITR, size_t... I, class... T>
-void read_helper(CONT& c, ITR& itr, std::index_sequence<I...>, std::tuple<T...>& t)
+void
+read_helper(CONT &c, ITR &itr, std::index_sequence<I...>, std::tuple<T...> &t)
 {
 	(read_one(c, itr, std::get<I>(t)), ...);
 }
 
 template <class CONT, class ITR, class... T>
-void read(CONT &c, ITR& itr, std::tuple<T...>& t)
+void
+read(CONT &c, ITR &itr, std::tuple<T...> &t)
 {
-	read_helper(c, itr, std::make_index_sequence<sizeof...(T)>{}, t);
+	read_helper(c, itr, std::make_index_sequence<sizeof...(T)> {}, t);
 }
 
 template <class CONT, class ITR>
-void read(CONT &c, ITR& itr, VariadicData_t& t)
+void
+read(CONT &c, ITR &itr, VariadicData_t &t)
 {
 	read_one(c, itr, t);
 }
 
 std::string
-contName(const StaticBuffer&)
+contName(const StaticBuffer &)
 {
 	return "static buffer";
 }
 
 template <size_t N, class ALL>
 std::string
-contName(const tnt::Buffer<N, ALL>&)
+contName(const tnt::Buffer<N, ALL> &)
 {
 	return "Buffer<" + std::to_string(N) + ">";
 }
@@ -265,8 +289,7 @@ report(const char *mode, const PerfTimer &timer, size_t data_size)
 }
 
 template <class CONT, bool LIGHT, class T, size_t N>
-__attribute__((noinline)) void
-bench(T (&in)[N], T (&out)[N])
+__attribute__((noinline)) void bench(T (&in)[N], T (&out)[N])
 {
 	// Prepare
 	CONT cont;
@@ -278,7 +301,7 @@ bench(T (&in)[N], T (&out)[N])
 
 	// Write
 	timer.start();
-	for (auto& x : in)
+	for (auto &x : in)
 		write(cont, x);
 	timer.stop();
 	report("Write", timer, dataSizeTotal(in));
@@ -286,7 +309,7 @@ bench(T (&in)[N], T (&out)[N])
 	// Read
 	timer.start();
 	auto itr = cont.template begin<LIGHT>();
-	for (auto& x : out)
+	for (auto &x : out)
 		read(cont, itr, x);
 	timer.stop();
 	report("Read", timer, dataSizeTotal(in));
@@ -314,18 +337,19 @@ doTests()
 	bench<tnt::Buffer<>, false>(variadicDataIn, variadicDataOut);
 	bench<tnt::Buffer<>, true>(variadicDataIn, variadicDataOut);
 
-//	bench<std::vector<char>>(simpleDataIn, simpleDataOut);
-//	bench<tnt::Buffer<1024>>(simpleDataIn, simpleDataOut);
+	//	bench<std::vector<char>>(simpleDataIn, simpleDataOut);
+	//	bench<tnt::Buffer<1024>>(simpleDataIn, simpleDataOut);
 }
 
-int main(int, const char**)
+int
+main(int, const char **)
 {
 	// Generate random data.
-	for (auto& x : simpleDataIn)
+	for (auto &x : simpleDataIn)
 		gen(x);
-	for (auto& x : complexDataIn)
+	for (auto &x : complexDataIn)
 		gen(x);
-	for (auto& x : variadicDataIn)
+	for (auto &x : variadicDataIn)
 		gen(x);
 
 	std::cout << "***************** WARM UP *****************" << std::endl;
